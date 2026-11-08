@@ -7,6 +7,7 @@ import { loadSettings, saveSettings } from '../core/settings';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
 import { showMenu } from './menu';
+import { applyFx } from '../fx/background';
 import { navigate } from './transition';
 import { showPromotion } from './promotion';
 
@@ -97,6 +98,12 @@ export function showAiGame(root: HTMLElement): void {
     arrowBtn,
     cardButton(t('btn.undo'), undo),
     legalBtn,
+    cardButton(t('btn.view3d'), () => {
+      const s = loadSettings();
+      s.view3d = !s.view3d;
+      saveSettings(s);
+      applyFx();
+    }),
     cardButton(t('btn.new'), () => { gen++; engine.cancel(); navigate(root, () => showAiSetup(root)); }),
     cardButton(t('btn.menu'), () => { gen++; engine.cancel(); navigate(root, () => showMenu(root)); }),
   );

@@ -153,9 +153,8 @@ export class BoardView {
   }
 
   private pointer(e: PointerEvent) {
-    const r = this.canvas.getBoundingClientRect();
-    // el canvas puede estar desplazado por el shake; el rect ya lo incluye, así que se compensa
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    // offsetX/Y están en coordenadas locales del canvas: sirven también con la perspectiva 3D (CSS)
+    return { x: e.offsetX, y: e.offsetY };
   }
 
   // ---------- input ----------
@@ -316,10 +315,10 @@ export class BoardView {
 
     const off = this.fx.shakeOffset(now);
     if (off.x !== 0 || off.y !== 0) {
-      this.canvas.style.transform = `translate(${off.x}px, ${off.y}px)`;
+      this.canvas.style.translate = `${off.x}px ${off.y}px`;
       this.shaking = true;
     } else if (this.shaking) {
-      this.canvas.style.transform = '';
+      this.canvas.style.translate = '';
       this.shaking = false;
     }
     return this.anims.length > 0 || this.fx.active;

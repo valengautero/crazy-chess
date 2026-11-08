@@ -44,6 +44,7 @@ export function initFx(): void {
 export function applyFx(): void {
   const s = loadSettings();
   document.body.classList.toggle('crt-on', s.crt);
+  document.body.classList.toggle('persp-3d', s.view3d);
   if (!canvas) return;
   if (s.bgAnim && !running) startBackground();
   if (!s.bgAnim) stopBackground();

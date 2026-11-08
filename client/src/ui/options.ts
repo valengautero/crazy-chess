@@ -6,13 +6,14 @@ import { cardButton, el } from './dom';
 import { showMenu } from './menu';
 import { navigate } from './transition';
 
-type BoolKey = 'crt' | 'bgAnim' | 'shake' | 'sfx' | 'music' | 'showLegal';
+type BoolKey = 'view3d' | 'crt' | 'bgAnim' | 'shake' | 'sfx' | 'music' | 'showLegal';
 const TOGGLES: [BoolKey, TKey][] = [
   ['crt', 'opt.crt'],
   ['bgAnim', 'opt.bg'],
   ['shake', 'opt.shake'],
   ['sfx', 'opt.sfx'],
   ['music', 'opt.music'],
+  ['view3d', 'opt.view3d'],
   ['showLegal', 'btn.legal'],
 ];
 

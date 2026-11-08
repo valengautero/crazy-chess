@@ -5,6 +5,7 @@ import { loadSettings, saveSettings } from '../core/settings';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
 import { showMenu } from './menu';
+import { applyFx } from '../fx/background';
 import { navigate } from './transition';
 import { showPromotion } from './promotion';
 
@@ -43,6 +44,12 @@ export function showLocalGame(root: HTMLElement): void {
       view.invalidate();
     }),
     legalBtn,
+    cardButton(t('btn.view3d'), () => {
+      const s = loadSettings();
+      s.view3d = !s.view3d;
+      saveSettings(s);
+      applyFx();
+    }),
     cardButton(t('btn.new'), () => {
       game.reset();
       view.clearSelection();

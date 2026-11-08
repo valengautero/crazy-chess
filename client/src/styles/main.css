@@ -88,3 +88,12 @@ body.crt-on #crt {
 .card-btn:nth-child(odd):hover:not(:disabled) { transform: translateY(-5px) rotate(1.2deg); }
 .card-btn:nth-child(even):hover:not(:disabled) { transform: translateY(-5px) rotate(-1.2deg); }
 @media (prefers-reduced-motion: reduce) { .title, .menu-list > .card-btn { animation: none; } }
+
+/* ---------- tablero en perspectiva 3D (opcional) ---------- */
+.board-stage { perspective: 1000px; }
+.board { transition: transform 0.45s ease, box-shadow 0.45s ease; transform-origin: 50% 70%; }
+body.persp-3d .board-stage { padding: 4px 0 28px; }
+body.persp-3d .board {
+  transform: rotateX(42deg) scale(0.96);
+  box-shadow: 0 8px 0 #2a1b4a, 0 14px 0 #1a1030, 0 30px 40px rgba(0, 0, 0, 0.6);
+}

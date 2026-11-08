@@ -8,6 +8,7 @@ export interface Settings {
   shake: boolean;
   sfx: boolean;
   music: boolean;
+  view3d: boolean;
 }
 const KEY = 'chess-pixel:settings';
 const defaults: Settings = {
@@ -20,6 +21,7 @@ const defaults: Settings = {
   shake: true,
   sfx: true,
   music: true,
+  view3d: false,
 };
 
 let cache: Settings | null = null;

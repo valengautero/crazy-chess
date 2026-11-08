@@ -22,6 +22,8 @@ const es = {
   'opt.shake': 'Sacudida de pantalla',
   'opt.sfx': 'Efectos de sonido',
   'opt.music': 'Música',
+  'opt.view3d': 'Tablero en perspectiva 3D',
+  'btn.view3d': '3D',
   'opt.mute': 'Silenciar todo',
   'btn.undo': 'Deshacer',
   'btn.flip': 'Girar',
