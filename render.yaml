@@ -1,7 +1,12 @@
-# Despliegue en Render: New + → Blueprint → elegí este repositorio.
+# Despliegue en Render (runtime Node, sin Docker): New + → Blueprint → elegí este repositorio.
 services:
   - type: web
     name: crazy-chess
-    runtime: docker
+    runtime: node
     plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
     healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22

@@ -76,9 +76,10 @@ Todo corre en **un solo servicio Node** que sirve el cliente compilado y el WebS
 Importante: el servidor guarda las salas en memoria, así que necesita **una sola instancia** siempre encendida.
 
 ### Render (lo más simple)
-1. Subí el proyecto a un repositorio de GitHub.
-2. En render.com: **New + → Blueprint** y elegí el repositorio (usa `render.yaml`), o **New + → Web Service** con runtime *Docker*.
-3. Cuando termine, tu juego queda en `https://crazy-chess.onrender.com`. En el plan gratis el servicio se duerme tras 15 min sin tráfico
+`render.yaml` usa el runtime **Node** (sin Docker): compila con `npm ci && npm run build` y arranca con `npm start`; Render inyecta `PORT`.
+1. Subí el proyecto a un repositorio de GitHub (`git remote add origin <url>`, `git push -u origin main`).
+2. En render.com: **New + → Blueprint** y elegí el repositorio. (O **New + → Web Service** con runtime *Node*, build `npm ci && npm run build`, start `npm start`.)
+3. Cuando termine, el juego queda en `https://crazy-chess.onrender.com` (el nombre depende de si está libre). En el plan gratis el servicio se duerme tras 15 min sin tráfico
    (la primera visita tarda ~30 s) y se pierden las salas al dormirse.
 
 ### Fly.io
@@ -91,7 +92,7 @@ fly deploy
 ### Railway
 **New Project → Deploy from GitHub repo**; detecta el `Dockerfile`. Definí la variable `PORT` solo si Railway no la inyecta.
 
-> El Dockerfile y los archivos de despliegue no pudieron probarse en este entorno (sin Docker instalado). El build de producción
+> El Dockerfile, `fly.toml` y `render.yaml` no pudieron probarse en este entorno (sin Docker ni cuentas de hosting); el camino de Render con Node usa exactamente los mismos comandos que se verificaron en local. El build de producción
 > (`npm run build && npm start`) sí se verificó en local.
 
 ## Solución de problemas
