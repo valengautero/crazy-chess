@@ -271,7 +271,7 @@ export class BoardView {
       from: m.from,
       to: m.to,
       start: now,
-      dur: viaDrag ? 200 : 300,
+      dur: viaDrag ? 220 : 340,
       kind: viaDrag ? 'land' : 'hop',
       ghost,
       impact,
@@ -305,10 +305,12 @@ export class BoardView {
       this.fx.burst(c.x, c.y, 22, ['#fff4d6', '#ffd24a', '#e63946'], s * 5, ps, now);
       const v = VALUE[ghost.type];
       if (v) this.fx.floatText(c.x, c.y - s * 0.4, `+${v}`, '#ffd24a', Math.round(s * 0.45), now);
-      if (settings.shake) this.fx.shake(s * 0.12, now);
-    } else {
-      this.fx.burst(c.x, c.y + s * 0.3, 6, ['#d8c8ff', '#8f6bc2'], s * 1.5, ps, now);
+      if (settings.shake) this.fx.shake(s * 0.15, now);
     }
+    // al caer: polvo del color de la pieza + temblor del tablero, en TODA jugada
+    const white = m.color === 'w';
+    this.fx.dust(c.x, c.y + s * 0.32, ghost ? 18 : 16, white ? ['#fff4d6', '#8fb8ff', '#d8c8ff'] : ['#ffd24a', '#e63946', '#d8c8ff'], s * 3.2, ps, now);
+    if (!ghost && settings.shake) this.fx.shake(s * 0.07, now);
     if (m.promotion) {
       this.fx.burst(c.x, c.y, 28, ['#ffd24a', '#fff4d6', '#3a86ff'], s * 4, ps, now);
       this.fx.floatText(c.x, c.y - s * 0.5, '¡CORONA!', '#ffd24a', Math.round(s * 0.34), now);
@@ -470,14 +472,26 @@ export class BoardView {
     let q: number; // progreso del aplastón al aterrizar
     if (a.kind === 'hop' && p < FLIGHT) {
       const f = p / FLIGHT;
-      const e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
-      x = from.x + (to.x - from.x) * e;
-      y = from.y + (to.y - from.y) * e;
-      const arc = Math.sin(Math.PI * f);
-      lift = arc * s * 0.32;
-      sx = 1 - 0.12 * arc;
-      sy = 1 + 0.2 * arc;
-      rot = (to.x - from.x >= 0 ? 1 : -1) * arc * 0.12;
+      const at = (t: number) => {
+        const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        return { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, arc: Math.sin(Math.PI * t) };
+      };
+      // estela: copias translúcidas que quedan atrás
+      for (let i = 3; i >= 1; i--) {
+        const t = f - i * 0.07;
+        if (t <= 0) continue;
+        const g = at(t);
+        this.ctx.globalAlpha = 0.28 - i * 0.07;
+        this.drawCard(piece.type, piece.color, g.x, g.y, s, { lift: g.arc * s * 0.45, sx: 0.95, sy: 1.1 });
+      }
+      this.ctx.globalAlpha = 1;
+      const cur = at(f);
+      x = cur.x;
+      y = cur.y;
+      lift = cur.arc * s * 0.45;
+      sx = 1 - 0.14 * cur.arc;
+      sy = 1 + 0.24 * cur.arc;
+      rot = (to.x - from.x >= 0 ? 1 : -1) * cur.arc * 0.18;
     } else {
       q = a.kind === 'hop' ? (p - FLIGHT) / (1 - FLIGHT) : p;
       const k = Math.exp(-4 * q) * Math.cos(q * Math.PI * 2.5);

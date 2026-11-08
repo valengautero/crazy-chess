@@ -8,6 +8,7 @@ import { applyFx } from '../fx/background';
 import { Connection, getToken, savedRoom, saveRoom } from '../net/connection';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
+import { createMoveInfo } from './moveInfo';
 import { showMenu } from './menu';
 import { showPromotion } from './promotion';
 import { navigate } from './transition';
@@ -112,6 +113,7 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
   // ---------- DOM ----------
   const screen = el('main', 'game-screen online');
   const status = el('div', 'status');
+  const moveInfo = createMoveInfo(game);
   const invite = el('div', 'invite hidden');
   const inviteCode = el('div', 'invite-code');
   const linkInput = el('input', 'link-input');
@@ -188,7 +190,7 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
   });
   chat.append(log, emotes, form);
 
-  screen.append(top.bar, status, invite, stage, bottom.bar, banner, controls, chat);
+  screen.append(top.bar, status, moveInfo.node, invite, stage, bottom.bar, banner, controls, chat);
   root.append(screen);
 
   // ---------- tablero ----------
@@ -233,6 +235,7 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
     view.opts.flipped = s.you === 'b';
     view.clearSelection();
     view.sync();
+    moveInfo.update();
     refresh();
   }
 

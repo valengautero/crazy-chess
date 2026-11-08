@@ -7,6 +7,7 @@ import { t } from '../core/i18n';
 import { loadSettings, saveSettings } from '../core/settings';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
+import { createMoveInfo } from './moveInfo';
 import { showMenu } from './menu';
 import { applyFx } from '../fx/background';
 import { navigate } from './transition';
@@ -77,6 +78,7 @@ export function showAiGame(root: HTMLElement): void {
 
   const screen = el('main', 'game-screen');
   const status = el('div', 'status');
+  const moveInfo = createMoveInfo(game);
   const stage = el('div', 'board-stage');
   const canvas = el('canvas', 'board');
   const promo = el('div', 'promo hidden');
@@ -136,6 +138,7 @@ export function showAiGame(root: HTMLElement): void {
   screen.append(
     el('div', 'subtitle', `${level.name} ${level.approxElo}`),
     status,
+    moveInfo.node,
     stage,
     coach,
     controls,
@@ -171,6 +174,7 @@ export function showAiGame(root: HTMLElement): void {
     status.textContent = text;
     status.classList.toggle('alert', s.check);
     view.sync();
+    moveInfo.update();
   }
 
   function afterMove(fenBefore: string): void {

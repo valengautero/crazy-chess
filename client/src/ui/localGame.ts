@@ -4,6 +4,7 @@ import { t } from '../core/i18n';
 import { loadSettings, saveSettings } from '../core/settings';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
+import { createMoveInfo } from './moveInfo';
 import { showMenu } from './menu';
 import { applyFx } from '../fx/background';
 import { navigate } from './transition';
@@ -16,6 +17,7 @@ export function showLocalGame(root: HTMLElement): void {
 
   const screen = el('main', 'game-screen');
   const status = el('div', 'status');
+  const moveInfo = createMoveInfo(game);
   const stage = el('div', 'board-stage');
   const canvas = el('canvas', 'board');
   const promo = el('div', 'promo hidden');
@@ -57,7 +59,7 @@ export function showLocalGame(root: HTMLElement): void {
     }),
     cardButton(t('btn.menu'), () => navigate(root, () => showMenu(root))),
   );
-  screen.append(status, stage, controls);
+  screen.append(status, moveInfo.node, stage, controls);
   root.append(screen);
 
   const view = new BoardView(canvas, game, {
@@ -88,6 +90,7 @@ export function showLocalGame(root: HTMLElement): void {
     status.textContent = t(s.messageKey) + (s.check && !s.over ? ' ' + t('game.check') : '');
     status.classList.toggle('alert', s.check);
     view.sync();
+    moveInfo.update();
   }
 
   refreshLegalLabel();

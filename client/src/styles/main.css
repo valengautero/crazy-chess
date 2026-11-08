@@ -156,3 +156,8 @@ body.persp-3d .board {
 .coach.k-inaccuracy { border-left-color: var(--gold); }
 .coach.k-mistake { border-left-color: #fb923c; }
 .coach.k-blunder { border-left-color: var(--red); }
+
+/* ---------- última jugada (arriba del tablero) ---------- */
+.move-info { min-height: 26px; padding: 2px 12px; font-size: 18px; color: var(--ink); background: rgba(18, 10, 31, 0.8); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--shadow); text-align: center; }
+.move-info.pop { animation: movepop 350ms steps(5); }
+@keyframes movepop { from { transform: translateY(-6px) scale(1.06); background: var(--violet); } to { transform: none; } }

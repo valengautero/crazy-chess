@@ -30,6 +30,24 @@ export class Effects {
     }
   }
 
+  /** Polvo al aterrizar: salta hacia arriba y a los costados (semicírculo superior). */
+  dust(x: number, y: number, n: number, colors: string[], speed: number, size: number, now: number): void {
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI * (0.05 + Math.random() * 0.9); // entre -9° y -171°: hacia arriba
+      const v = speed * (0.4 + Math.random() * 0.6);
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * size * 4,
+        y,
+        vx: Math.cos(a) * v * 1.2,
+        vy: Math.sin(a) * v,
+        born: now,
+        life: 450 + Math.random() * 400,
+        size: size + (Math.random() < 0.3 ? 1 : 0),
+        color: colors[Math.floor(Math.random() * colors.length)]!,
+      });
+    }
+  }
+
   floatText(x: number, y: number, text: string, color: string, size: number, now: number, life = 1000): void {
     this.texts.push({ x, y, text, color, born: now, life, size });
   }
