@@ -1,0 +1,47 @@
+:root {
+  --bg: #120a1f;
+  --felt: #1f1238;
+  --ink: #fff4d6;
+  --gold: #ffd24a;
+  --red: #e63946;
+  --blue: #3a86ff;
+  --violet: #6b3fa0;
+  --shadow: #07030d;
+  font-family: 'Pixelify Sans', monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+body {
+  background: radial-gradient(circle at 50% 30%, #2d1a52 0%, var(--bg) 70%);
+  -webkit-tap-highlight-color: transparent;
+}
+#app { min-height: 100%; display: flex; justify-content: center; padding: 16px; }
+button { font-family: inherit; }
+.hidden { display: none !important; }
+
+.menu { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; width: 100%; max-width: 420px; }
+.title { font-size: clamp(32px, 9vw, 56px); margin: 0; color: var(--gold); text-shadow: 4px 4px 0 var(--red), 8px 8px 0 var(--shadow); text-align: center; letter-spacing: 2px; }
+.menu-list { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+
+.card-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 12px 16px; font-size: 20px; color: var(--ink); background: var(--violet);
+  border: 4px solid var(--ink); border-radius: 6px; box-shadow: 4px 4px 0 var(--shadow);
+  cursor: pointer; transition: transform 0.08s steps(2), box-shadow 0.08s steps(2);
+}
+.card-btn small { font-size: 12px; opacity: 0.7; }
+.card-btn:hover:not(:disabled) { transform: translateY(-4px) rotate(-1deg); box-shadow: 4px 8px 0 var(--shadow); background: #7d4cbd; }
+.card-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: 2px 2px 0 var(--shadow); }
+.card-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.game-screen { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 720px; }
+.status { font-size: 22px; text-align: center; min-height: 30px; color: var(--gold); text-shadow: 2px 2px 0 var(--shadow); }
+.status.alert { color: var(--red); }
+.board-stage { position: relative; width: 100%; display: flex; justify-content: center; }
+.board { border: 6px solid var(--ink); border-radius: 4px; box-shadow: 6px 6px 0 var(--shadow); touch-action: none; image-rendering: pixelated; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.controls .card-btn { font-size: 15px; padding: 8px 12px; }
+
+.promo { position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content; background: var(--felt); border: 4px solid var(--gold); padding: 16px; text-align: center; box-shadow: 6px 6px 0 var(--shadow); z-index: 2; }
+.promo p { margin: 0 0 12px; font-size: 20px; }
+.promo-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
