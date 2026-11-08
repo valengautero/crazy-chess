@@ -32,6 +32,18 @@ export function unlockAudio(): void {
   applyAudioSettings();
 }
 
+// La música no debe seguir sonando si la pestaña queda en segundo plano o se cierra.
+document.addEventListener('visibilitychange', () => {
+  if (!ctx) return;
+  if (document.hidden) void ctx.suspend();
+  else void ctx.resume();
+});
+window.addEventListener('pagehide', () => {
+  stopMusic();
+  void ctx?.close();
+  ctx = null; // si la página vuelve del caché, el próximo clic crea un contexto nuevo
+});
+
 export function applyAudioSettings(): void {
   if (!ctx) return;
   const s = loadSettings();
