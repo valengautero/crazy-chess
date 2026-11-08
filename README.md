@@ -5,7 +5,8 @@ Juego de ajedrez web para aprender, con estética pixel art de "cartas" y multij
 - **Local**: dos jugadores en el mismo dispositivo.
 - **Practicar vs IA**: Stockfish (WASM) en 6 niveles, con pistas, flecha de mejor jugada y deshacer.
 - **Multijugador online**: salas por código de 4 letras, reloj opcional, tablas, rendirse, revancha y chat con emotes.
-- **Aprender**: _(etapa e, pendiente)_.
+- **Aprender**: 9 lecciones interactivas con ejercicios y feedback inmediato, progreso guardado en localStorage.
+- **Coach** (en partidas vs IA): explica en lenguaje simple por qué tu jugada fue buena o mala y marca errores graves.
 
 ## Requisitos
 - Node.js 20 o superior (`brew install node` en macOS).
@@ -40,10 +41,26 @@ Si cerrás la pestaña, entrá a Multijugador → **Volver a la sala**. Quien no
   borran solas tras 10 min vacías.
 - Límites: mensajes de 2 KB, chat de 120 caracteres y 5 mensajes cada 5 s.
 
+## Modo Aprender y Coach
+Las lecciones, en orden: tablero y coordenadas, cómo se mueve cada pieza, captura, jaque/mate/tablas, reglas especiales,
+valor de las piezas, aperturas básicas, táctica (clavada, horquilla, descubierta, mate del pastor y su defensa) y finales
+(rey+dama, rey+torre, oposición y rey+peón). Cada lección empieza con una explicación corta y sigue con ejercicios donde movés
+las piezas; los finales se juegan contra Stockfish. Cada lección se desbloquea al completar la anterior
+(Opciones → "Desbloquear todas las lecciones" lo evita).
+
+- Los datos viven en `client/src/learn/lessons/es.ts`. Para agregar un idioma: crear `lessons/en.ts` con la misma forma y
+  registrarlo en `lessons/index.ts`; los textos de la interfaz están en `core/i18n.ts`.
+- **Coach**: después de cada jugada tuya compara la evaluación de Stockfish (a máxima fuerza) antes y después. Según los
+  centipeones perdidos la clasifica (mejor, muy buena, buena, imprecisión, error, error grave) y explica el motivo (te
+  capturan una pieza, te dan mate, te perdiste un mate o una captura). En errores y errores graves aparece
+  "Deshacer y reintentar", que además marca con una flecha la jugada recomendada. Se apaga con el botón Coach.
+
 ## Tests
 ```bash
 npm test
 ```
+Corre los tests del servidor y del cliente. Los del cliente validan que **todas** las lecciones sean correctas (FEN legales,
+jugadas legales en cada rama, objetivos alcanzables) y la lógica del Coach.
 Cubren la lógica de salas (colores, jugadas legales/ilegales, mate, promoción, reloj, tablas, rendición, revancha, chat, abandono),
 el gestor de salas (códigos únicos, limpieza) y la sincronización real por WebSocket (dos clientes, reconexión, mensajes inválidos).
 
@@ -75,7 +92,8 @@ fly deploy
 - [x] b: IA con Stockfish (6 niveles, pistas, flecha, deshacer)
 - [x] c: estética pixel art, sprites de cartas, juice, shader de fondo, CRT, audio y opción de tablero 3D
 - [x] d: servidor multijugador (salas, reloj, tablas, revancha, chat, reconexión, tests, despliegue)
-- [ ] e: modo Aprender y Coach · [ ] f: pulido final
+- [x] e: modo Aprender (9 lecciones) y Coach con Stockfish
+- [ ] f: pulido final
 
 ## Estética y opciones
 Menú → Opciones: efecto CRT, fondo animado (shader WebGL), sacudida de pantalla, efectos de sonido, música, casillas legales y

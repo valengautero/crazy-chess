@@ -1,5 +1,6 @@
 import type { Square } from 'chess.js';
-import { getEngine, parseUci } from '../ai/engine';
+import { buildVerdict, formatEval, type Verdict } from '../ai/coachLogic';
+import { getEngine, parseUci, type SearchResult } from '../ai/engine';
 import { ANALYSIS, LEVELS } from '../ai/levels';
 import { Game } from '../core/game';
 import { t } from '../core/i18n';
@@ -65,6 +66,14 @@ export function showAiGame(root: HTMLElement): void {
   const game = new Game();
   let gen = 0; // se incrementa para descartar respuestas viejas del motor
   let thinking = false;
+  let coachGen = 0; // invalida veredictos pendientes (deshacer, nueva partida)
+  let lastVerdict: Verdict | null = null;
+  // Análisis a máxima fuerza de la posición actual; lo comparten pista, flecha y Coach.
+  let cache: { fen: string; p: Promise<SearchResult> } | null = null;
+  const analyze = (fen: string): Promise<SearchResult> => {
+    if (cache?.fen !== fen) cache = { fen, p: engine.search(fen, ANALYSIS) };
+    return cache.p;
+  };
 
   const screen = el('main', 'game-screen');
   const status = el('div', 'status');
@@ -73,6 +82,14 @@ export function showAiGame(root: HTMLElement): void {
   const promo = el('div', 'promo hidden');
   stage.append(canvas, promo);
   const controls = el('div', 'controls');
+
+  // ---- panel del Coach ----
+  const coach = el('div', 'coach k-good');
+  const coachText = el('div', 'coach-text', t('coach.idle'));
+  const coachEval = el('div', 'coach-eval');
+  const coachActions = el('div', 'coach-actions');
+  coach.append(el('div', 'coach-title', t('coach.title')), coachText, coachEval, coachActions);
+  const paintCoachVisibility = () => coach.classList.toggle('hidden', !settings.coach);
 
   const onOff = (v: boolean) => (v ? t('ai.on') : t('ai.off'));
   const legalBtn = cardButton('', () => {
@@ -88,7 +105,15 @@ export function showAiGame(root: HTMLElement): void {
     labels();
     updateArrow();
   });
+  const coachBtn = cardButton('', () => {
+    settings.coach = !settings.coach;
+    saveSettings(settings);
+    labels();
+    paintCoachVisibility();
+    if (settings.coach) updateArrow();
+  });
   const labels = () => {
+    coachBtn.textContent = `${t('btn.coach')}: ${onOff(settings.coach)}`;
     legalBtn.textContent = `${t('btn.legal')}: ${onOff(settings.showLegal)}`;
     arrowBtn.textContent = `${t('ai.arrow')}: ${onOff(settings.showBestArrow)}`;
   };
@@ -96,6 +121,7 @@ export function showAiGame(root: HTMLElement): void {
   controls.append(
     cardButton(t('ai.hint'), () => void showHint(true)),
     arrowBtn,
+    coachBtn,
     cardButton(t('btn.undo'), undo),
     legalBtn,
     cardButton(t('btn.view3d'), () => {
@@ -104,33 +130,36 @@ export function showAiGame(root: HTMLElement): void {
       saveSettings(s);
       applyFx();
     }),
-    cardButton(t('btn.new'), () => { gen++; engine.cancel(); navigate(root, () => showAiSetup(root)); }),
-    cardButton(t('btn.menu'), () => { gen++; engine.cancel(); navigate(root, () => showMenu(root)); }),
+    cardButton(t('btn.new'), () => { gen++; coachGen++; engine.cancel(); navigate(root, () => showAiSetup(root)); }),
+    cardButton(t('btn.menu'), () => { gen++; coachGen++; engine.cancel(); navigate(root, () => showMenu(root)); }),
   );
   screen.append(
     el('div', 'subtitle', `${level.name} ${level.approxElo}`),
     status,
     stage,
+    coach,
     controls,
   );
   root.append(screen);
 
   const view = new BoardView(canvas, game, {
     showLegal: settings.showLegal,
+    reserve: 300,
     flipped: human === 'b',
     canInteract: () =>
       !thinking && !game.status().over && game.turn === human && promo.classList.contains('hidden'),
     onMoveAttempt: (from, to) => {
       if (game.needsPromotion(from, to)) {
         showPromotion(promo, (p) => {
-          game.tryMove(from, to, p);
+          const before = game.chess.fen();
+          if (game.tryMove(from, to, p)) afterMove(before);
           view.clearSelection();
-          afterMove();
         });
         return false;
       }
+      const before = game.chess.fen();
       const ok = game.tryMove(from, to) !== null;
-      if (ok) afterMove();
+      if (ok) afterMove(before);
       return ok;
     },
   });
@@ -144,10 +173,46 @@ export function showAiGame(root: HTMLElement): void {
     view.sync();
   }
 
-  function afterMove(): void {
+  function afterMove(fenBefore: string): void {
     view.setArrow(null);
+    const fenAfter = game.chess.fen();
+    const played = game.lastMove!.lan;
     refresh();
+    if (game.chess.isCheckmate()) showVerdictText('k-best', t('coach.mate'));
+    else if (settings.coach && !game.status().over) void coachEvaluate(fenBefore, fenAfter, played);
     void aiTurn();
+  }
+
+  function showVerdictText(cls: string, text: string, evalText = '', actions: HTMLElement[] = []): void {
+    coach.className = `coach ${cls}${settings.coach ? '' : ' hidden'}`;
+    coachText.textContent = text;
+    coachEval.textContent = evalText;
+    coachActions.replaceChildren(...actions);
+  }
+
+  async function coachEvaluate(before: string, after: string, played: string): Promise<void> {
+    const my = ++coachGen;
+    showVerdictText('k-good', t('coach.analyzing'));
+    // la búsqueda de `after` se encola antes que la respuesta de la IA
+    const [b, a] = await Promise.all([analyze(before), engine.search(after, ANALYSIS)]);
+    if (my !== coachGen) return;
+    const v = buildVerdict({ color: human, played, fenBefore: before, fenAfter: after, before: b, after: a });
+    if (!v) return showVerdictText('k-good', t('coach.idle'));
+    lastVerdict = v;
+    const actions: HTMLElement[] = [];
+    if ((v.kind === 'mistake' || v.kind === 'blunder') && v.bestUci) {
+      actions.push(cardButton(t('coach.undo'), () => undoAndSuggest(v)));
+    }
+    showVerdictText(`k-${v.kind}`, v.text, formatEval(v), actions);
+  }
+
+  /** Deshace hasta el turno anterior del humano y marca la jugada sugerida. */
+  function undoAndSuggest(v: Verdict): void {
+    undo();
+    if (v.bestUci) {
+      const m = parseUci(v.bestUci);
+      view.setArrow({ from: m.from as Square, to: m.to as Square });
+    }
   }
 
   async function aiTurn(): Promise<void> {
@@ -176,6 +241,10 @@ export function showAiGame(root: HTMLElement): void {
 
   function undo(): void {
     gen++;
+    coachGen++;
+    cache = null;
+    lastVerdict = null;
+    showVerdictText('k-good', t('coach.idle'));
     engine.cancel();
     thinking = false;
     // deshacer hasta que vuelva a ser el turno del humano
@@ -192,7 +261,7 @@ export function showAiGame(root: HTMLElement): void {
   async function showHint(force: boolean): Promise<void> {
     if (game.status().over || game.turn !== human || thinking) return;
     const fen = game.chess.fen();
-    const res = await engine.search(fen, ANALYSIS);
+    const res = await analyze(fen);
     if (game.chess.fen() !== fen) return; // la posición cambió mientras tanto
     if (!res.best) {
       if (force) status.textContent = t('ai.hint.none');
@@ -203,11 +272,14 @@ export function showAiGame(root: HTMLElement): void {
   }
 
   function updateArrow(): void {
+    // precalienta el análisis de esta posición: el Coach lo necesita cuando muevas
+    if (settings.coach && game.turn === human && !game.status().over) void analyze(game.chess.fen());
     if (settings.showBestArrow) void showHint(false);
     else view.setArrow(null);
   }
 
   labels();
+  paintCoachVisibility();
   void aiTurn(); // si el humano juega negras, mueve la IA primero
   refresh();
 }

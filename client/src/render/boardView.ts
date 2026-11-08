@@ -26,6 +26,10 @@ export interface BoardOptions {
   onMoveAttempt: (from: Square, to: Square) => boolean;
   /** Si devuelve false, el tablero no deja seleccionar piezas (partida terminada, turno ajeno…). */
   canInteract: () => boolean;
+  /** Modo "tocá una casilla" (lecciones de coordenadas): si está definido, los clics van acá en vez de seleccionar piezas. */
+  onSquareClick?: (sq: Square) => void;
+  /** Alto (px) que otros elementos de la pantalla ocupan fuera del tablero; limita su tamaño. Por defecto 200. */
+  reserve?: number;
 }
 
 interface Anim {
@@ -55,6 +59,9 @@ export class BoardView {
   private seenPlies = 0;
   private lastWasDrag = false;
   private shaking = false;
+  private marks = new Map<Square, string>();
+  private raf = 0;
+  private ro: ResizeObserver;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -71,9 +78,10 @@ export class BoardView {
       this.hover = null;
       this.invalidate();
     });
-    new ResizeObserver(() => this.resize()).observe(canvas.parentElement!);
+    this.ro = new ResizeObserver(() => this.resize());
+    this.ro.observe(canvas.parentElement!);
     this.resize();
-    requestAnimationFrame(this.frame);
+    this.raf = requestAnimationFrame(this.frame);
   }
 
   invalidate(): void {
@@ -82,6 +90,22 @@ export class BoardView {
 
   setArrow(a: { from: Square; to: Square } | null): void {
     this.arrow = a;
+    this.invalidate();
+  }
+
+  /** Pinta casillas con un color (p. ej. acierto/error en las lecciones). `{}` las limpia. */
+  setMarks(marks: Record<string, string>): void {
+    this.marks = new Map(Object.entries(marks) as [Square, string][]);
+    this.invalidate();
+  }
+
+  /** Festejo: partículas y texto flotante en el centro del tablero. */
+  celebrate(text = '¡BIEN!'): void {
+    const now = performance.now();
+    const s = this.size / 8;
+    const colors = ['#ffd24a', '#fff4d6', '#3a86ff', '#e63946'];
+    this.fx.burst(this.size / 2, this.size / 2, 60, colors, s * 6, Math.max(2, Math.round(s * 0.07)), now);
+    this.fx.floatText(this.size / 2, this.size / 2, text, '#ffd24a', Math.round(s * 0.6), now, 1400);
     this.invalidate();
   }
 
@@ -111,7 +135,7 @@ export class BoardView {
   // ---------- tamaño y coordenadas ----------
   private resize(): void {
     const parent = this.canvas.parentElement!;
-    const avail = Math.min(parent.clientWidth, window.innerHeight - 200);
+    const avail = Math.min(parent.clientWidth, window.innerHeight - (this.opts.reserve ?? 200));
     const px = Math.max(240, Math.floor(avail / 8) * 8);
     const dpr = window.devicePixelRatio || 1;
     this.size = px;
@@ -159,6 +183,12 @@ export class BoardView {
 
   // ---------- input ----------
   private onDown = (e: PointerEvent): void => {
+    if (this.opts.onSquareClick) {
+      const p = this.pointer(e);
+      const clicked = this.squareAt(p.x, p.y);
+      if (clicked) this.opts.onSquareClick(clicked);
+      return;
+    }
     if (!this.opts.canInteract()) return;
     const { x, y } = this.pointer(e);
     const sq = this.squareAt(x, y);
@@ -325,13 +355,22 @@ export class BoardView {
   }
 
   private frame = (now: number): void => {
+    if (!this.canvas.isConnected) {
+      this.dispose(); // la pantalla fue reemplazada: se libera el bucle
+      return;
+    }
     const animating = this.updateFx(now);
     if (this.dirty || animating || this.hover || this.selected || this.drag) {
       this.draw(now);
       this.dirty = false;
     }
-    requestAnimationFrame(this.frame);
+    this.raf = requestAnimationFrame(this.frame);
   };
+
+  dispose(): void {
+    cancelAnimationFrame(this.raf);
+    this.ro.disconnect();
+  }
 
   // ---------- dibujo ----------
   private draw(now: number): void {
@@ -356,6 +395,7 @@ export class BoardView {
       fill(last.to, PALETTE.lastMove);
     }
     if (kingSq) fill(kingSq, PALETTE.check);
+    for (const [sq, color] of this.marks) fill(sq, color);
     if (this.selected) fill(this.selected, PALETTE.selected);
     const animatedTo = new Set(this.anims.map((a) => a.to));
     const draggedFrom = this.drag?.moved ? this.drag.from : null;

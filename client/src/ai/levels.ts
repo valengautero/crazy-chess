@@ -17,4 +17,4 @@ export const LEVELS: Level[] = [
 ];
 
 /** Búsqueda a máxima fuerza para pistas y análisis. */
-export const ANALYSIS: SearchOptions = { skill: 20, depth: 14 };
+export const ANALYSIS: SearchOptions = { skill: 20, depth: 12 };

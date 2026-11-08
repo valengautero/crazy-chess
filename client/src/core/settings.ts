@@ -9,6 +9,8 @@ export interface Settings {
   sfx: boolean;
   music: boolean;
   view3d: boolean;
+  unlockAll: boolean;
+  coach: boolean;
 }
 const KEY = 'chess-pixel:settings';
 const defaults: Settings = {
@@ -22,6 +24,8 @@ const defaults: Settings = {
   sfx: true,
   music: true,
   view3d: false,
+  unlockAll: false,
+  coach: true,
 };
 
 let cache: Settings | null = null;

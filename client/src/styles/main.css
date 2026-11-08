@@ -130,3 +130,29 @@ body.persp-3d .board {
 .emote-row .card-btn { padding: 4px 8px; font-size: 13px; box-shadow: 2px 2px 0 var(--shadow); border-width: 3px; }
 .chat-form { display: flex; gap: 6px; }
 .chat-form .card-btn { padding: 4px 12px; font-size: 14px; }
+
+/* ---------- aprender ---------- */
+.lessons .card-btn.done { border-color: var(--gold); }
+.intro-box { background: rgba(18, 10, 31, 0.8); border: 3px solid var(--ink); padding: 14px 16px; box-shadow: 4px 4px 0 var(--shadow); display: flex; flex-direction: column; gap: 10px; font-size: 18px; line-height: 1.35; }
+.intro-box p { margin: 0; }
+.game-screen.learn { max-width: 640px; }
+.learn-head { display: flex; justify-content: space-between; width: 100%; font-size: 15px; opacity: 0.9; }
+.prompt { width: 100%; padding: 10px 14px; background: rgba(18, 10, 31, 0.85); border: 3px solid var(--gold); font-size: 18px; line-height: 1.3; box-shadow: 3px 3px 0 var(--shadow); }
+.quiz { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.quiz .card-btn { font-size: 17px; text-align: center; }
+.feedback { min-height: 44px; width: 100%; text-align: center; font-size: 17px; padding: 4px 8px; }
+.feedback.ok { color: #4ade80; }
+.feedback.bad { color: var(--red); }
+
+/* ---------- coach ---------- */
+.coach { width: 100%; padding: 8px 12px; background: rgba(18, 10, 31, 0.85); border: 3px solid var(--ink); border-left-width: 10px; box-shadow: 3px 3px 0 var(--shadow); display: flex; flex-direction: column; gap: 6px; }
+.coach .coach-title { font-size: 13px; opacity: 0.7; letter-spacing: 2px; text-transform: uppercase; }
+.coach .coach-text { font-size: 16px; line-height: 1.3; }
+.coach .coach-eval { font-size: 13px; opacity: 0.8; }
+.coach .coach-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.coach .coach-actions .card-btn { padding: 4px 10px; font-size: 14px; border-width: 3px; }
+.coach.k-best, .coach.k-great { border-left-color: #4ade80; }
+.coach.k-good { border-left-color: var(--blue); }
+.coach.k-inaccuracy { border-left-color: var(--gold); }
+.coach.k-mistake { border-left-color: #fb923c; }
+.coach.k-blunder { border-left-color: var(--red); }
