@@ -1,5 +1,6 @@
 import { t } from '../core/i18n';
 import { cardButton, el } from './dom';
+import { showAiSetup } from './aiGame';
 import { showLocalGame } from './localGame';
 
 export function showMenu(root: HTMLElement): void {
@@ -9,7 +10,7 @@ export function showMenu(root: HTMLElement): void {
   const list = el('div', 'menu-list');
   list.append(
     cardButton(t('menu.learn'), () => {}, { disabled: true, hint: t('menu.soon') }),
-    cardButton(t('menu.ai'), () => {}, { disabled: true, hint: t('menu.soon') }),
+    cardButton(t('menu.ai'), () => showAiSetup(root)),
     cardButton(t('menu.online'), () => {}, { disabled: true, hint: t('menu.soon') }),
     cardButton(t('menu.local'), () => showLocalGame(root)),
   );

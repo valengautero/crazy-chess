@@ -1,8 +1,11 @@
 export interface Settings {
   showLegal: boolean;
+  showBestArrow: boolean;
+  aiLevel: number;
+  aiColor: 'w' | 'b';
 }
 const KEY = 'chess-pixel:settings';
-const defaults: Settings = { showLegal: true };
+const defaults: Settings = { showLegal: true, showBestArrow: false, aiLevel: 2, aiColor: 'w' };
 
 export function loadSettings(): Settings {
   try {

@@ -34,6 +34,7 @@ export class BoardView {
   private legalTargets: Move[] = [];
   private drag: { from: Square; x: number; y: number; moved: boolean } | null = null;
   private dirty = true;
+  private arrow: { from: Square; to: Square } | null = null;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -59,6 +60,11 @@ export class BoardView {
 
   invalidate(): void {
     this.dirty = true;
+  }
+
+  setArrow(a: { from: Square; to: Square } | null): void {
+    this.arrow = a;
+    this.invalidate();
   }
 
   clearSelection(): void {
@@ -223,11 +229,42 @@ export class BoardView {
       }
     }
 
+    if (this.arrow) this.drawArrow(this.arrow.from, this.arrow.to, s);
+
     // pieza arrastrada, encima de todo
     if (this.drag?.moved) {
       const p = this.game.chess.get(this.drag.from);
       if (p) this.drawPiece(p.type, p.color, this.drag.x, this.drag.y - s * 0.15, s * 1.1);
     }
+  }
+
+  private drawArrow(from: Square, to: Square, s: number): void {
+    const { ctx } = this;
+    const a = this.originOf(from);
+    const b = this.originOf(to);
+    const x1 = a.x + s / 2, y1 = a.y + s / 2, x2 = b.x + s / 2, y2 = b.y + s / 2;
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const head = s * 0.34;
+    const w = s * 0.14;
+    const ex = x2 - Math.cos(ang) * head * 0.6;
+    const ey = y2 - Math.sin(ang) * head * 0.6;
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = '#3a86ff';
+    ctx.fillStyle = '#3a86ff';
+    ctx.lineCap = 'butt';
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - Math.cos(ang - 0.5) * head, y2 - Math.sin(ang - 0.5) * head);
+    ctx.lineTo(x2 - Math.cos(ang + 0.5) * head, y2 - Math.sin(ang + 0.5) * head);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
 
   private drawCoordinates(s: number): void {

@@ -1,10 +1,11 @@
-import type { PieceSymbol, Square } from 'chess.js';
+import type { Square } from 'chess.js';
 import { Game } from '../core/game';
 import { t } from '../core/i18n';
 import { loadSettings, saveSettings } from '../core/settings';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
 import { showMenu } from './menu';
+import { showPromotion } from './promotion';
 
 export function showLocalGame(root: HTMLElement): void {
   root.replaceChildren();
@@ -67,20 +68,11 @@ export function showLocalGame(root: HTMLElement): void {
   });
 
   function askPromotion(from: Square, to: Square): void {
-    promo.replaceChildren(el('p', '', t('promo.title')));
-    const row = el('div', 'promo-row');
-    for (const p of ['q', 'r', 'b', 'n'] as PieceSymbol[]) {
-      row.append(
-        cardButton(t(`piece.${p}` as 'piece.q'), () => {
-          promo.classList.add('hidden');
-          game.tryMove(from, to, p);
-          view.clearSelection();
-          refresh();
-        }),
-      );
-    }
-    promo.append(row);
-    promo.classList.remove('hidden');
+    showPromotion(promo, (p) => {
+      game.tryMove(from, to, p);
+      view.clearSelection();
+      refresh();
+    });
   }
 
   function refresh(): void {
