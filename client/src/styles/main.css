@@ -97,3 +97,36 @@ body.persp-3d .board {
   transform: rotateX(42deg) scale(0.96);
   box-shadow: 0 8px 0 #2a1b4a, 0 14px 0 #1a1030, 0 30px 40px rgba(0, 0, 0, 0.6);
 }
+
+/* ---------- multijugador ---------- */
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip-row .card-btn { padding: 6px 12px; font-size: 16px; }
+.notice { color: var(--gold); text-align: center; background: rgba(0,0,0,0.4); padding: 8px 12px; border: 2px solid var(--red); }
+.code-input { font-family: inherit; font-size: 32px; text-align: center; letter-spacing: 8px; padding: 8px; color: var(--gold); background: var(--felt); border: 4px solid var(--ink); border-radius: 6px; width: 100%; text-transform: uppercase; }
+.code-input:focus, .chat-input:focus, .link-input:focus { outline: 3px solid var(--blue); }
+
+.game-screen.online { max-width: 640px; }
+.player-bar { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; background: rgba(18, 10, 31, 0.75); border: 3px solid var(--ink); border-radius: 6px; box-shadow: 3px 3px 0 var(--shadow); font-size: 16px; position: relative; }
+.pname { flex: 1; }
+.dot { width: 10px; height: 10px; background: #666; border: 2px solid var(--ink); }
+.dot.on { background: #4ade80; }
+.clock { font-size: 22px; min-width: 70px; text-align: center; padding: 2px 8px; background: var(--felt); border: 2px solid var(--ink); }
+.clock.active { background: var(--violet); color: var(--gold); }
+.clock.low { background: var(--red); color: #fff; animation: pulse 0.6s steps(2) infinite; }
+@keyframes pulse { 50% { opacity: 0.6; } }
+.bubble { position: absolute; right: 100px; top: -14px; background: var(--ink); color: var(--bg); padding: 2px 8px; border: 2px solid var(--shadow); font-size: 14px; z-index: 3; }
+.invite { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; width: 100%; background: rgba(18,10,31,0.8); border: 3px solid var(--gold); }
+.invite-label { font-size: 14px; opacity: 0.8; }
+.invite-code { font-size: 44px; letter-spacing: 10px; color: var(--gold); text-shadow: 3px 3px 0 var(--red); }
+.link-input, .chat-input { font-family: inherit; font-size: 14px; width: 100%; padding: 6px 8px; color: var(--ink); background: var(--felt); border: 3px solid var(--ink); }
+.banner { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 8px 12px; background: rgba(18,10,31,0.85); border: 3px solid var(--gold); width: 100%; }
+.banner .card-btn { padding: 6px 12px; font-size: 16px; }
+.chat { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.chat-log { height: 96px; overflow-y: auto; padding: 6px 8px; background: rgba(0,0,0,0.45); border: 3px solid var(--ink); font-size: 14px; }
+.chat-line.mine b { color: var(--blue); }
+.chat-line.theirs b { color: var(--gold); }
+.chat-line.notice { color: var(--red); }
+.emote-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.emote-row .card-btn { padding: 4px 8px; font-size: 13px; box-shadow: 2px 2px 0 var(--shadow); border-width: 3px; }
+.chat-form { display: flex; gap: 6px; }
+.chat-form .card-btn { padding: 4px 12px; font-size: 14px; }

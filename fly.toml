@@ -1,0 +1,25 @@
+# Despliegue en Fly.io: `fly launch --no-deploy --copy-config` y luego `fly deploy`.
+app = "ajedrez-pixel"          # cambiá el nombre: debe ser único en Fly
+primary_region = "gru"         # São Paulo; usá `fly platform regions` para ver otras
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Las salas viven en memoria: con auto-stop se pierden partidas en curso. Mantené 1 máquina siempre encendida.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.checks]
+    [http_service.checks.health]
+      grace_period = "10s"
+      interval = "30s"
+      method = "GET"
+      path = "/healthz"
+      timeout = "5s"

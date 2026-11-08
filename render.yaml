@@ -1,0 +1,7 @@
+# Despliegue en Render: New + → Blueprint → elegí este repositorio.
+services:
+  - type: web
+    name: ajedrez-pixel
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz

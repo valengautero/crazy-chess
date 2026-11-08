@@ -3,11 +3,20 @@ import '@fontsource/pixelify-sans/700.css';
 import { playSfx, unlockAudio } from './audio/audio';
 import { initFx } from './fx/background';
 import { showMenu } from './ui/menu';
+import { showOnlineRoom } from './ui/online';
 import { mountMuteButton } from './ui/options';
 
 initFx();
 mountMuteButton();
-showMenu(document.getElementById('app')!);
+const app = document.getElementById('app')!;
+// Link de invitación: /?room=ABCD entra directo a la sala.
+const invited = new URLSearchParams(location.search).get('room')?.toUpperCase();
+if (invited && /^[A-Z]{4}$/.test(invited)) {
+  history.replaceState(null, '', location.pathname);
+  showOnlineRoom(app, { kind: 'join', code: invited });
+} else {
+  showMenu(app);
+}
 
 // El audio solo puede arrancar tras un gesto del usuario.
 document.addEventListener('pointerdown', unlockAudio);

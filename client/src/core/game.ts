@@ -32,6 +32,11 @@ export class Game {
     }
   }
 
+  /** Aplica una jugada en notación UCI ("e2e4", "e7e8q"). */
+  applyUci(uci: string): Move | null {
+    return this.tryMove(uci.slice(0, 2) as Square, uci.slice(2, 4) as Square, (uci[4] as PieceSymbol | undefined) ?? undefined);
+  }
+
   undo(): Move | null {
     return this.chess.undo();
   }
