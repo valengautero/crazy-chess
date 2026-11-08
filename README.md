@@ -98,7 +98,7 @@ fly deploy
 ## Estética y opciones
 Menú → Opciones: efecto CRT, fondo animado (shader WebGL), sacudida de pantalla, efectos de sonido, música, casillas legales y
 tablero en perspectiva 3D. El botón ♪ silencia todo. Los ajustes se guardan en localStorage.
-Todo el audio se sintetiza con WebAudio y los sprites 16x16 están definidos en código (`client/src/render/sprites.ts`).
+Todo el audio se sintetiza con WebAudio y las piezas 32×32 se generan en código (`client/src/render/sprites32.ts`). En Opciones se puede alternar entre piezas con carta o piezas solas.
 
 ## Licencias
 Stockfish (WASM lite, `client/public/stockfish/`) es GPL-3.0; ver `LICENSE-GPL3.txt` en esa carpeta. Fuente: Pixelify Sans (OFL).

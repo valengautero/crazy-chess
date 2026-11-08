@@ -49,6 +49,7 @@ const es = {
   'learn.thinking': 'El rival está pensando…',
   'learn.completed': '¡Lección completada!',
   'opt.unlock': 'Desbloquear todas las lecciones',
+  'opt.cards': 'Piezas con carta',
   'opt.coach': 'Coach en partidas vs IA',
   'btn.coach': 'Coach',
   'coach.title': 'Coach',

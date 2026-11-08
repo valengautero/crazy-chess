@@ -11,6 +11,8 @@ export interface Settings {
   view3d: boolean;
   unlockAll: boolean;
   coach: boolean;
+  /** true: piezas dentro de una carta; false: pieza sola. */
+  pieceCards: boolean;
 }
 const KEY = 'chess-pixel:settings';
 const defaults: Settings = {
@@ -26,6 +28,7 @@ const defaults: Settings = {
   view3d: false,
   unlockAll: false,
   coach: true,
+  pieceCards: true,
 };
 
 let cache: Settings | null = null;

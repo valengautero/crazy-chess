@@ -1,6 +1,7 @@
 /** Variantes visuales de las piezas (misma silueta 16x16, distinta paleta/formato). Se usan en la tabla `pieces.html`. */
 import type { Color, PieceSymbol } from 'chess.js';
-import { CARD_H, CARD_W, expand, type Style } from './sprites';
+import { BARE_INK, expand, paintPiece32, type Style } from './sprites';
+import { SIZE32 } from './sprites32';
 
 export interface PieceStylePreset {
   id: string;
@@ -9,17 +10,60 @@ export interface PieceStylePreset {
   /** Tamaño nativo del dibujo, en píxeles. */
   native: string;
   kind: 'card' | 'bare' | 'glyph';
+  /** Resolución del dibujo (por defecto 16). */
+  art?: 16 | 32;
   w?: Style;
   b?: Style;
 }
 
 const ink = (o: string, f: string, h: string, s: string) => ({ o, f, h, s });
 
+const CLASICO: [Style, Style] = [
+  { ink: ink('#0d0817', '#2f6fe0', '#8fb8ff', '#1a3f94'), face: '#fff4d6', ring: '#ffd24a', border: '#0d0817' },
+  { ink: ink('#3b1d05', '#ffd24a', '#fff0a0', '#b8861b'), face: '#1a1028', ring: '#e63946', border: '#fff4d6' },
+];
+const PALOS: [Style, Style] = [
+  { ink: ink('#2a0a10', '#d62839', '#ff8a94', '#8f1d2c'), face: '#fff4d6', ring: '#d62839', border: '#0d0817' },
+  { ink: ink('#000000', '#fff4d6', '#ffffff', '#b9a98a'), face: '#17102b', ring: '#fff4d6', border: '#fff4d6' },
+];
+const DORADO: [Style, Style] = [
+  { ink: ink('#1c0b3a', '#6b3fa0', '#b48be0', '#3d1f6e'), face: '#ffd24a', ring: '#fff4d6', border: '#0d0817' },
+  { ink: ink('#2a1a00', '#ffd24a', '#fff0a0', '#b8861b'), face: '#3b1d6e', ring: '#ffd24a', border: '#ffd24a' },
+];
+
+const NEW_32: PieceStylePreset[] = [
+  {
+    id: 'n-clasico', art: 32, kind: 'card', native: '40×44 (pieza 32×32)',
+    name: '1 · Carta clásica 32×32',
+    description: 'Siluetas nuevas y más detalladas, con la paleta crema/azul y oscuro/dorado de siempre.',
+    w: CLASICO[0], b: CLASICO[1],
+  },
+  {
+    id: 'n-palos', art: 32, kind: 'card', native: '40×44 (pieza 32×32)',
+    name: '2 · Palos rojo y negro 32×32',
+    description: 'Blancas en rojo sobre crema, negras en crema sobre carta oscura. Aire de naipe.',
+    w: PALOS[0], b: PALOS[1],
+  },
+  {
+    id: 'n-dorado', art: 32, kind: 'card', native: '40×44 (pieza 32×32)',
+    name: '3 · Dorado y violeta 32×32',
+    description: 'Cartas doradas con pieza violeta contra cartas violetas con pieza dorada.',
+    w: DORADO[0], b: DORADO[1],
+  },
+  {
+    id: 'n-sola', art: 32, kind: 'bare', native: '32×32',
+    name: '4 · Pieza sola 32×32',
+    description: 'Solo la silueta con contorno, sin carta: crema contra violeta oscuro. La más limpia y grande.',
+    w: { ink: BARE_INK.w, face: '', ring: '', border: '' }, b: { ink: BARE_INK.b, face: '', ring: '', border: '' },
+  },
+];
+
 export const PRESETS: PieceStylePreset[] = [
+  ...NEW_32,
   {
     id: 'clasico',
-    name: 'A · Carta clásica (actual)',
-    description: 'Carta crema con pieza azul contra carta oscura con pieza dorada. La que usa el juego hoy.',
+    name: 'A · Carta clásica 16×16 (anterior)',
+    description: 'Carta crema con pieza azul contra carta oscura con pieza dorada. La que usaba el juego antes.',
     native: '20×22 (pieza 16×16)',
     kind: 'card',
     w: { ink: ink('#0d0817', '#2f6fe0', '#8fb8ff', '#1a3f94'), face: '#fff4d6', ring: '#ffd24a', border: '#0d0817' },
@@ -27,7 +71,7 @@ export const PRESETS: PieceStylePreset[] = [
   },
   {
     id: 'palos',
-    name: 'B · Palos rojo y negro',
+    name: 'B · Palos rojo y negro 16×16',
     description: 'Más cerca de un naipe: blancas en rojo sobre crema, negras en crema sobre carta oscura.',
     native: '20×22 (pieza 16×16)',
     kind: 'card',
@@ -36,7 +80,7 @@ export const PRESETS: PieceStylePreset[] = [
   },
   {
     id: 'dorado',
-    name: 'C · Dorado y violeta',
+    name: 'C · Dorado y violeta 16×16',
     description: 'Cartas doradas con pieza violeta contra cartas violetas con pieza dorada. Muy "joker".',
     native: '20×22 (pieza 16×16)',
     kind: 'card',
@@ -45,7 +89,7 @@ export const PRESETS: PieceStylePreset[] = [
   },
   {
     id: 'fosforo',
-    name: 'D · Fósforo verde',
+    name: 'D · Fósforo verde 16×16',
     description: 'Monocromo estilo terminal CRT: verde brillante sobre oscuro y verde oscuro sobre claro.',
     native: '20×22 (pieza 16×16)',
     kind: 'card',
@@ -54,7 +98,7 @@ export const PRESETS: PieceStylePreset[] = [
   },
   {
     id: 'sinCarta',
-    name: 'E · Pieza sola (sin carta)',
+    name: 'E · Pieza sola 16×16',
     description: 'Solo la silueta con contorno grueso, sin fondo de carta. Más limpio y más grande dentro de la casilla.',
     native: '16×16',
     kind: 'bare',
@@ -93,6 +137,30 @@ export function renderPiece(type: PieceSymbol, color: Color, preset: PieceStyleP
   }
 
   const st = (color === 'w' ? preset.w : preset.b)!;
+
+  if (preset.art === 32) {
+    if (preset.kind === 'bare') {
+      c.width = SIZE32;
+      c.height = SIZE32;
+      paintPiece32(c.getContext('2d')!, type, st.ink);
+      return c;
+    }
+    c.width = 40;
+    c.height = 44;
+    const g32 = c.getContext('2d')!;
+    for (let y = 0; y < 44; y++) {
+      for (let x = 0; x < 40; x++) {
+        if ((x === 0 || x === 39) && (y === 0 || y === 43)) continue;
+        const edge = x === 0 || y === 0 || x === 39 || y === 43;
+        const ring = x === 1 || y === 1 || x === 38 || y === 42;
+        g32.fillStyle = edge ? st.border : ring ? st.ring : st.face;
+        g32.fillRect(x, y, 1, 1);
+      }
+    }
+    paintPiece32(g32, type, st.ink, 4, 7);
+    return c;
+  }
+
   const rows = expand(type);
   const px = (g: CanvasRenderingContext2D, x: number, y: number, col: string) => {
     g.fillStyle = col;
@@ -118,14 +186,16 @@ export function renderPiece(type: PieceSymbol, color: Color, preset: PieceStyleP
     return c;
   }
 
-  c.width = CARD_W;
-  c.height = CARD_H;
+  // tarjeta 16×16 anterior: 20×22
+  const CW = 20, CH = 22;
+  c.width = CW;
+  c.height = CH;
   const g = c.getContext('2d')!;
-  for (let y = 0; y < CARD_H; y++) {
-    for (let x = 0; x < CARD_W; x++) {
-      if ((x === 0 || x === CARD_W - 1) && (y === 0 || y === CARD_H - 1)) continue;
-      const edge = x === 0 || y === 0 || x === CARD_W - 1 || y === CARD_H - 1;
-      const ring = x === 1 || y === 1 || x === CARD_W - 2 || y === CARD_H - 2;
+  for (let y = 0; y < CH; y++) {
+    for (let x = 0; x < CW; x++) {
+      if ((x === 0 || x === CW - 1) && (y === 0 || y === CH - 1)) continue;
+      const edge = x === 0 || y === 0 || x === CW - 1 || y === CH - 1;
+      const ring = x === 1 || y === 1 || x === CW - 2 || y === CH - 2;
       px(g, x, y, edge ? st.border : ring ? st.ring : st.face);
     }
   }

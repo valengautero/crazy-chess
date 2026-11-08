@@ -3,7 +3,7 @@ import { playSfx } from '../audio/audio';
 import type { Game } from '../core/game';
 import { loadSettings } from '../core/settings';
 import { Effects } from './effects';
-import { CARD_H, CARD_W, getCard } from './sprites';
+import { CARD_H, CARD_W, getBare, getCard } from './sprites';
 
 const FILES = 'abcdefgh';
 const VALUE: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
@@ -497,14 +497,33 @@ export class BoardView {
     o: { rot?: number; lift?: number; scale?: number; sx?: number; sy?: number } = {},
   ): void {
     const { ctx } = this;
-    const h = s * 0.84;
-    const w = (h * CARD_W) / CARD_H;
+    const bare = !loadSettings().pieceCards;
+    const h = s * (bare ? 0.94 : 0.84);
+    const w = bare ? h : (h * CARD_W) / CARD_H;
     const lift = o.lift ?? 0;
     const k = o.scale ?? 1;
     const sx = (o.sx ?? 1) * k;
     const sy = (o.sy ?? 1) * k;
-    const card = getCard(type, color);
     ctx.imageSmoothingEnabled = false;
+    if (bare) {
+      // sombra elíptica en el suelo; se achica y separa al levantar la pieza
+      ctx.save();
+      ctx.translate(cx + lift * 0.3, cy + h * 0.4);
+      ctx.scale(sx, 1);
+      ctx.fillStyle = 'rgba(7, 3, 13, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, w * 0.36 * (1 - lift / (s * 3)), h * 0.09, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.translate(cx, cy - lift);
+      ctx.rotate(o.rot ?? 0);
+      ctx.scale(sx, sy);
+      ctx.drawImage(getBare(type, color), -w / 2, -h / 2, w, h);
+      ctx.restore();
+      return;
+    }
+    const card = getCard(type, color);
     // sombra (queda en el suelo; se separa a medida que la carta se levanta)
     ctx.save();
     ctx.translate(cx + s * 0.03 + lift * 0.4, cy + s * 0.05 + lift * 0.4);

@@ -1,4 +1,5 @@
 import type { Color, PieceSymbol } from 'chess.js';
+import { build32, SIZE32 } from './sprites32';
 
 /**
  * Sprites 16x16 dibujados a mano. Las piezas simétricas se escriben solo con la mitad izquierda (8 columnas)
@@ -67,12 +68,25 @@ const STYLES: Record<Color, Style> = {
   b: { ink: { o: '#3b1d05', f: '#ffd24a', h: '#fff0a0', s: '#b8861b' }, face: '#1a1028', ring: '#e63946', border: '#fff4d6' },
 };
 
-export const CARD_W = 20;
-export const CARD_H = 22;
+/** Carta que contiene la pieza de 32×32 (con 2 px de margen dentro del aro). */
+export const CARD_W = 40;
+export const CARD_H = 44;
 
 const atlas = new Map<string, HTMLCanvasElement>();
 
-/** Carta 20x22 con la pieza 16x16 adentro. Se cachea. */
+/** Pinta una pieza 32×32 en `g` desplazada (ox, oy) usando la paleta `ink`. */
+export function paintPiece32(g: CanvasRenderingContext2D, type: PieceSymbol, ink: Record<string, string>, ox = 0, oy = 0): void {
+  build32(type).forEach((row, y) =>
+    [...row].forEach((ch, x) => {
+      const col = ink[ch];
+      if (!col) return;
+      g.fillStyle = col;
+      g.fillRect(x + ox, y + oy, 1, 1);
+    }),
+  );
+}
+
+/** Carta 40×44 con la pieza 32×32 adentro. Se cachea. */
 export function getCard(type: PieceSymbol, color: Color): HTMLCanvasElement {
   const key = color + type;
   const hit = atlas.get(key);
@@ -82,27 +96,36 @@ export function getCard(type: PieceSymbol, color: Color): HTMLCanvasElement {
   c.height = CARD_H;
   const g = c.getContext('2d')!;
   const st = STYLES[color];
-  const px = (x: number, y: number, col: string) => {
-    g.fillStyle = col;
-    g.fillRect(x, y, 1, 1);
-  };
-  const inCorner = (x: number, y: number) =>
-    (x === 0 || x === CARD_W - 1) && (y === 0 || y === CARD_H - 1);
   for (let y = 0; y < CARD_H; y++) {
     for (let x = 0; x < CARD_W; x++) {
-      if (inCorner(x, y)) continue;
+      if ((x === 0 || x === CARD_W - 1) && (y === 0 || y === CARD_H - 1)) continue; // esquinas cortadas
       const edge = x === 0 || y === 0 || x === CARD_W - 1 || y === CARD_H - 1;
       const ring = x === 1 || y === 1 || x === CARD_W - 2 || y === CARD_H - 2;
-      px(x, y, edge ? st.border : ring ? st.ring : st.face);
+      g.fillStyle = edge ? st.border : ring ? st.ring : st.face;
+      g.fillRect(x, y, 1, 1);
     }
   }
-  const rows = expand(type);
-  rows.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      const col = st.ink[ch];
-      if (col) px(x + 2, y + 3, col);
-    });
-  });
+  paintPiece32(g, type, st.ink, (CARD_W - SIZE32) / 2, (CARD_H - SIZE32) / 2 + 1);
   atlas.set(key, c);
   return c;
 }
+
+const bareAtlas = new Map<string, HTMLCanvasElement>();
+
+/** Pieza sola (sin carta): la silueta 32×32 con su contorno, en colores propios para ser legible sobre el tablero. */
+export function getBare(type: PieceSymbol, color: Color): HTMLCanvasElement {
+  const key = color + type;
+  const hit = bareAtlas.get(key);
+  if (hit) return hit;
+  const c = document.createElement('canvas');
+  c.width = SIZE32;
+  c.height = SIZE32;
+  paintPiece32(c.getContext('2d')!, type, BARE_INK[color]);
+  bareAtlas.set(key, c);
+  return c;
+}
+
+export const BARE_INK: Record<Color, Record<string, string>> = {
+  w: { o: '#0d0817', f: '#fff4d6', h: '#ffffff', s: '#c9b58a' },
+  b: { o: '#fff4d6', f: '#2b1b4d', h: '#5a3f94', s: '#140a29' },
+};
