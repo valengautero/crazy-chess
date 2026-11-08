@@ -109,6 +109,7 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
   let snapAt = 0;
   let code: string | null = intent.kind === 'join' ? intent.code.toUpperCase() : null;
   let left = false;
+  let lastBannerKey = '';
 
   // ---------- DOM ----------
   const screen = el('main', 'game-screen online');
@@ -273,8 +274,12 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
     status.textContent = text;
     status.classList.toggle('alert', s.phase === 'playing' && game.status().check);
 
-    // banner: oferta de tablas / revancha
-    banner.replaceChildren();
+    // banner: oferta de tablas / revancha (solo se reconstruye si cambió, para no parpadear)
+    const bannerKey = `${s.phase}|${s.drawOffer ?? '-'}|${s.rematch.w}${s.rematch.b}|${s.you}`;
+    const rebuildBanner = bannerKey !== lastBannerKey;
+    lastBannerKey = bannerKey;
+    if (rebuildBanner) banner.replaceChildren();
+    if (rebuildBanner) {
     if (s.phase === 'playing' && s.drawOffer && s.drawOffer !== s.you) {
       banner.append(
         el('span', '', t('online.rivaloffers')),
@@ -289,6 +294,7 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
         if (s.rematch[opp]) banner.append(el('span', '', t('online.rematch.rival')));
         banner.append(cardButton(t('online.rematch'), () => conn.send({ t: 'rematch' })));
       }
+    }
     }
     banner.classList.toggle('hidden', banner.childElementCount === 0);
 

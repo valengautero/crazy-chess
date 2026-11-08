@@ -96,7 +96,7 @@ function startBackground(): void {
   const loop = () => {
     if (!running) return;
     gl.uniform2f(uR, c.width, c.height);
-    gl.uniform1f(uT, (performance.now() - t0) / 1000);
+    gl.uniform1f(uT, (performance.now() - t0) / 2200);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     raf = requestAnimationFrame(loop);
   };
