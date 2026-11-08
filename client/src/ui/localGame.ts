@@ -17,6 +17,7 @@ export function showLocalGame(root: HTMLElement): void {
 
   const screen = el('main', 'game-screen');
   const status = el('div', 'status');
+  status.setAttribute('role', 'status');
   const moveInfo = createMoveInfo(game);
   const stage = el('div', 'board-stage');
   const canvas = el('canvas', 'board');

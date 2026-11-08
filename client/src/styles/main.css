@@ -13,12 +13,12 @@
 html { background: radial-gradient(circle at 50% 30%, #2d1a52 0%, var(--bg) 70%) var(--bg); }
 html, body { margin: 0; height: 100%; color: var(--ink); }
 body { background: transparent; -webkit-tap-highlight-color: transparent; }
-#app { min-height: 100%; display: flex; justify-content: center; padding: 16px; }
+#app { min-height: 100%; display: flex; justify-content: center; padding: 56px 16px 16px; } /* 56px arriba: deja libre el botón ♪ */
 button { font-family: inherit; }
 .hidden { display: none !important; }
 
 .menu { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; width: 100%; max-width: 420px; }
-.title { font-size: clamp(32px, 9vw, 56px); margin: 0; color: var(--gold); text-shadow: 4px 4px 0 var(--red), 8px 8px 0 var(--shadow); text-align: center; letter-spacing: 2px; }
+.title { font-size: clamp(38px, 11vw, 64px); font-weight: 400; margin: 0; color: var(--gold); text-shadow: 0.06em 0.07em 0 var(--shadow); filter: drop-shadow(0 0 14px rgba(230, 57, 70, 0.55)); text-align: center; letter-spacing: 0.06em; line-height: 1.05; }
 .menu-list { display: flex; flex-direction: column; gap: 16px; width: 100%; }
 
 .card-btn {
@@ -166,3 +166,7 @@ body.persp-3d .board {
 /* Capas estables para los paneles: evitan repintados y parpadeos al actualizarse */
 .prompt, .coach, .banner, .move-info, .invite, .intro-box { contain: layout paint; }
 .board-stage, .controls { contain: layout; }
+
+/* foco visible para teclado */
+.card-btn:focus-visible, .mute-btn:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+canvas.board:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }

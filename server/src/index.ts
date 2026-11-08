@@ -8,4 +8,12 @@ const port = Number(process.env.PORT ?? 8787);
 const staticDir = process.env.STATIC_DIR ?? resolve(here, '../../client/dist');
 
 const s = await createServer({ port, staticDir });
-console.log(`Chess Pixel server escuchando en http://localhost:${s.port} (WebSocket en /ws)`);
+console.log(`Crazy Chess! server escuchando en http://localhost:${s.port} (WebSocket en /ws)`);
+
+// Cierre ordenado cuando la plataforma reinicia o detiene el servicio.
+for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(sig, () => {
+    console.log(`${sig}: cerrando…`);
+    void s.close().then(() => process.exit(0));
+  });
+}

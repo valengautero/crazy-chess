@@ -6,6 +6,7 @@ import { el } from './dom';
 /** Línea con la última jugada ("Blancas: Caballo g1 → f3"). `update()` se llama desde refresh(). */
 export function createMoveInfo(game: Game) {
   const node = el('div', 'move-info', t('move.none'));
+  node.setAttribute('role', 'status'); // anuncia cada jugada a lectores de pantalla
   let last = '';
   return {
     node,

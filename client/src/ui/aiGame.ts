@@ -78,6 +78,7 @@ export function showAiGame(root: HTMLElement): void {
 
   const screen = el('main', 'game-screen');
   const status = el('div', 'status');
+  status.setAttribute('role', 'status');
   const moveInfo = createMoveInfo(game);
   const stage = el('div', 'board-stage');
   const canvas = el('canvas', 'board');
@@ -147,7 +148,7 @@ export function showAiGame(root: HTMLElement): void {
 
   const view = new BoardView(canvas, game, {
     showLegal: settings.showLegal,
-    reserve: 300,
+    reserve: 340,
     flipped: human === 'b',
     canInteract: () =>
       !thinking && !game.status().over && game.turn === human && promo.classList.contains('hidden'),
@@ -230,6 +231,11 @@ export function showAiGame(root: HTMLElement): void {
     refresh();
     const started = performance.now();
     const res = await engine.search(game.chess.fen(), level.search);
+    if (my === gen && !res.best && engine.failed) {
+      thinking = false;
+      status.textContent = t('ai.engine.error');
+      return;
+    }
     // pequeña pausa para que la IA no responda instantáneamente
     const wait = 350 - (performance.now() - started);
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));

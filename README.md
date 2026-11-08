@@ -1,6 +1,6 @@
-# Ajedrez Pixel
+# Crazy Chess!
 
-Juego de ajedrez web para aprender, con estética pixel art de "cartas" y multijugador online.
+Juego de ajedrez web para aprender, con estética pixel art de "cartas" y multijugador online. Funciona en PC y celular y se puede instalar como app (PWA).
 
 - **Local**: dos jugadores en el mismo dispositivo.
 - **Practicar vs IA**: Stockfish (WASM) en 6 niveles, con pistas, flecha de mejor jugada y deshacer.
@@ -31,6 +31,13 @@ Otros comandos: `npm test` (tests del servidor), `npm run typecheck`, `npm run b
 
 Si la conexión se corta (cambio de pestaña, bloqueo del celular), el cliente reintenta solo y recupera la partida.
 Si cerrás la pestaña, entrá a Multijugador → **Volver a la sala**. Quien no vuelve en 60 s pierde por abandono.
+
+## Controles
+- **Mouse / táctil**: tocá una pieza para ver sus jugadas legales y tocá el destino, o arrastrala.
+- **Teclado**: enfocá el tablero con Tab; flechas para moverte por las casillas, Enter o espacio para seleccionar y mover, Escape para cancelar. Las jugadas se anuncian a lectores de pantalla.
+- Botón ♪ (arriba a la derecha) silencia todo; Opciones permite apagar CRT, fondo animado, sacudida, sonido y música. Si tu sistema pide
+  "reducir movimiento", esos efectos arrancan apagados.
+- En el celular, abrí el menú del navegador y elegí "Agregar a pantalla de inicio" para instalarlo.
 
 ## Cómo funciona el multijugador
 - El **servidor es la fuente de verdad**: valida cada jugada con chess.js (turno, legalidad, jugada desfasada), maneja el reloj y la
@@ -71,7 +78,7 @@ Importante: el servidor guarda las salas en memoria, así que necesita **una sol
 ### Render (lo más simple)
 1. Subí el proyecto a un repositorio de GitHub.
 2. En render.com: **New + → Blueprint** y elegí el repositorio (usa `render.yaml`), o **New + → Web Service** con runtime *Docker*.
-3. Cuando termine, tu juego queda en `https://ajedrez-pixel.onrender.com`. En el plan gratis el servicio se duerme tras 15 min sin tráfico
+3. Cuando termine, tu juego queda en `https://crazy-chess.onrender.com`. En el plan gratis el servicio se duerme tras 15 min sin tráfico
    (la primera visita tarda ~30 s) y se pierden las salas al dormirse.
 
 ### Fly.io
@@ -87,13 +94,20 @@ fly deploy
 > El Dockerfile y los archivos de despliegue no pudieron probarse en este entorno (sin Docker instalado). El build de producción
 > (`npm run build && npm start`) sí se verificó en local.
 
+## Solución de problemas
+- **"No se pudo conectar con el servidor"**: en desarrollo usá `npm run dev` (levanta cliente y servidor). En producción el servidor debe estar encendido y servir el sitio y `/ws` en el mismo dominio.
+- **El link de invitación dice `localhost`**: abrí el juego con la URL de red (`http://192.168.x.x:5173`) antes de crear la sala.
+- **La IA no responde / "No se pudo cargar el motor"**: el motor se descarga de `/stockfish/` (≈2 MB); revisá que el servidor lo sirva con tipo `application/wasm`.
+- **Sin sonido**: los navegadores solo permiten audio después de un clic o toque; usá el botón ♪ para confirmar que no esté silenciado.
+- **Dos pestañas del mismo navegador cuentan como el mismo jugador** (comparten token). Para probar solo, usá `localhost` en una y `127.0.0.1` en la otra.
+
 ## Estado del proyecto
 - [x] a: tablero, reglas (chess.js) y juego local
 - [x] b: IA con Stockfish (6 niveles, pistas, flecha, deshacer)
 - [x] c: estética pixel art, sprites de cartas, juice, shader de fondo, CRT, audio y opción de tablero 3D
 - [x] d: servidor multijugador (salas, reloj, tablas, revancha, chat, reconexión, tests, despliegue)
 - [x] e: modo Aprender (9 lecciones) y Coach con Stockfish
-- [ ] f: pulido final
+- [x] f: pulido final (celular, teclado y accesibilidad, PWA, errores de red y de motor, CI y despliegue)
 
 ## Estética y opciones
 Menú → Opciones: efecto CRT, fondo animado (shader WebGL), sacudida de pantalla, efectos de sonido, música, casillas legales y

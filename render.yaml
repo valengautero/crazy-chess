@@ -1,7 +1,7 @@
 # Despliegue en Render: New + → Blueprint → elegí este repositorio.
 services:
   - type: web
-    name: ajedrez-pixel
+    name: crazy-chess
     runtime: docker
     plan: free
     healthCheckPath: /healthz

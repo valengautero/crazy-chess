@@ -110,10 +110,13 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
   let code: string | null = intent.kind === 'join' ? intent.code.toUpperCase() : null;
   let left = false;
   let lastBannerKey = '';
+  let noServer = false;
+  let downTimer: number | undefined;
 
   // ---------- DOM ----------
   const screen = el('main', 'game-screen online');
   const status = el('div', 'status');
+  status.setAttribute('role', 'status');
   const moveInfo = createMoveInfo(game);
   const invite = el('div', 'invite hidden');
   const inviteCode = el('div', 'invite-code');
@@ -254,7 +257,7 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
     linkInput.value = link;
 
     if (!s) {
-      status.textContent = conn.status === 'open' ? t('online.waiting') : t('online.reconnecting');
+      status.textContent = conn.status === 'open' ? t('online.waiting') : noServer ? t('online.noserver') : t('online.reconnecting');
       return;
     }
     const opp: Color = s.you === 'w' ? 'b' : 'w';
@@ -363,6 +366,14 @@ export function showOnlineRoom(root: HTMLElement, intent: Intent): void {
 
   // ---------- red ----------
   conn.onStatus = (st) => {
+    if (st === 'open') {
+      clearTimeout(downTimer);
+      downTimer = undefined;
+      noServer = false;
+    } else if (downTimer === undefined) {
+      // un solo temporizador mientras dure la caída (los reintentos no lo reinician)
+      downTimer = window.setTimeout(() => { noServer = true; refresh(); }, 4000);
+    }
     if (st === 'open' && !left) {
       if (code) conn.send({ t: 'join', token, code });
       else if (intent.kind === 'create') conn.send({ t: 'create', token, clock: intent.clock, color: intent.color });

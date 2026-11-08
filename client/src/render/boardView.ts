@@ -61,6 +61,8 @@ export class BoardView {
   private shaking = false;
   private marks = new Map<Square, string>();
   private raf = 0;
+  private kbSq: Square = 'e2';
+  private focused = false;
   private ro: ResizeObserver;
 
   constructor(
@@ -70,6 +72,13 @@ export class BoardView {
   ) {
     this.ctx = canvas.getContext('2d')!;
     this.seenPlies = game.chess.history().length;
+    // acceso por teclado y lectores de pantalla
+    canvas.tabIndex = 0;
+    canvas.setAttribute('role', 'application');
+    canvas.setAttribute('aria-label', 'Tablero de ajedrez. Con las flechas te movés por las casillas; Enter o espacio selecciona una pieza y luego su destino; Escape cancela.');
+    canvas.addEventListener('keydown', this.onKey);
+    canvas.addEventListener('focus', () => { this.focused = true; this.invalidate(); });
+    canvas.addEventListener('blur', () => { this.focused = false; this.invalidate(); });
     canvas.addEventListener('pointerdown', this.onDown);
     canvas.addEventListener('pointermove', this.onMove);
     canvas.addEventListener('pointerup', this.onUp);
@@ -135,7 +144,7 @@ export class BoardView {
   // ---------- tamaño y coordenadas ----------
   private resize(): void {
     const parent = this.canvas.parentElement!;
-    const avail = Math.min(parent.clientWidth, window.innerHeight - (this.opts.reserve ?? 200));
+    const avail = Math.min(parent.clientWidth, window.innerHeight - (this.opts.reserve ?? 240));
     const px = Math.max(240, Math.floor(avail / 8) * 8);
     const dpr = window.devicePixelRatio || 1;
     this.size = px;
@@ -210,6 +219,46 @@ export class BoardView {
     }
     this.invalidate();
   };
+
+  private onKey = (e: KeyboardEvent): void => {
+    const dir: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+    const d = dir[e.key];
+    if (d) {
+      e.preventDefault();
+      const flip = this.opts.flipped ? -1 : 1;
+      const f = Math.min(7, Math.max(0, FILES.indexOf(this.kbSq[0]!) + d[0] * flip));
+      const r = Math.min(8, Math.max(1, Number(this.kbSq[1]) + d[1] * flip));
+      this.kbSq = `${FILES[f]}${r}` as Square;
+      this.invalidate();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this.activate(this.kbSq);
+    } else if (e.key === 'Escape') {
+      this.clearSelection();
+    }
+  };
+
+  /** Equivale a un clic en la casilla (teclado). */
+  private activate(sq: Square): void {
+    if (this.opts.onSquareClick) {
+      this.opts.onSquareClick(sq);
+      return;
+    }
+    if (!this.opts.canInteract()) return;
+    if (this.selected && this.legalTargets.some((m) => m.to === sq)) {
+      this.finishMove(this.selected, sq, false);
+      return;
+    }
+    const piece = this.game.chess.get(sq);
+    if (piece && piece.color === this.game.turn) {
+      this.selected = sq;
+      this.legalTargets = this.game.legalMovesFrom(sq);
+      playSfx('hover');
+    } else {
+      this.clearSelection();
+    }
+    this.invalidate();
+  }
 
   private onMove = (e: PointerEvent): void => {
     const { x, y } = this.pointer(e);
@@ -362,7 +411,7 @@ export class BoardView {
       return;
     }
     const animating = this.updateFx(now);
-    if (this.dirty || animating || this.hover || this.selected || this.drag) {
+    if (this.dirty || animating || this.hover || this.selected || this.drag || this.focused) {
       this.draw(now);
       this.dirty = false;
     }
@@ -453,6 +502,16 @@ export class BoardView {
     }
 
     if (this.arrow) this.drawArrow(this.arrow.from, this.arrow.to, s);
+
+    if (this.focused) {
+      const o = this.originOf(this.kbSq);
+      ctx.save();
+      ctx.setLineDash([8, 5]);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.strokeRect(o.x + 3, o.y + 3, s - 6, s - 6);
+      ctx.restore();
+    }
 
     if (this.drag?.moved) {
       const p = this.game.chess.get(this.drag.from);

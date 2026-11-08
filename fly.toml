@@ -1,5 +1,5 @@
 # Despliegue en Fly.io: `fly launch --no-deploy --copy-config` y luego `fly deploy`.
-app = "ajedrez-pixel"          # cambiá el nombre: debe ser único en Fly
+app = "crazy-chess"          # cambiá el nombre: debe ser único en Fly
 primary_region = "gru"         # São Paulo; usá `fly platform regions` para ver otras
 
 [build]

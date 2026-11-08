@@ -49,7 +49,7 @@ export function createServer(opts: ServerOptions) {
       return;
     }
     if (root && existsSync(root)) return serveStatic(root, req, res);
-    res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Chess Pixel server: cliente no compilado (npm run build)');
+    res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Crazy Chess! server: cliente no compilado (npm run build)');
   });
 
   const wss = new WebSocketServer({ server: http, path: '/ws', maxPayload: 2048 });

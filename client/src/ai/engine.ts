@@ -23,14 +23,27 @@ export class Engine {
   private listeners = new Set<(line: string) => void>();
   private chain: Promise<unknown>;
   private busy = false;
+  failed = false;
 
   constructor() {
     this.worker = new Worker(`${import.meta.env.BASE_URL}stockfish/stockfish-19-lite-single.js`);
+    this.worker.onerror = () => this.fail();
     this.worker.onmessage = (e: MessageEvent) => {
       const line = String(e.data);
       for (const l of [...this.listeners]) l(line);
     };
     this.chain = this.init();
+  }
+
+  /** El worker no cargó (archivo faltante, WASM bloqueado…): destraba todo lo pendiente. */
+  private fail(): void {
+    this.failed = true;
+    this.busy = false;
+    for (const l of [...this.listeners]) {
+      l('uciok');
+      l('readyok');
+      l('bestmove (none)');
+    }
   }
 
   private waitFor(cmd: string, token: string): Promise<void> {
@@ -65,6 +78,7 @@ export class Engine {
   private run(fen: string, opts: SearchOptions): Promise<SearchResult> {
     const whiteToMove = fen.split(' ')[1] !== 'b';
     return new Promise((resolve) => {
+      if (this.failed) return resolve({ best: null, cp: null, mate: null, pv: [], depth: 0 });
       let cp: number | null = null;
       let mate: number | null = null;
       let pv: string[] = [];

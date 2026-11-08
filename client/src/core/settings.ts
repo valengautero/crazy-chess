@@ -33,14 +33,23 @@ const defaults: Settings = {
 
 let cache: Settings | null = null;
 
+/** Si el sistema pide menos movimiento, los efectos fuertes arrancan apagados (se pueden encender en Opciones). */
+function reducedMotionDefaults(): Partial<Settings> {
+  try {
+    return matchMedia('(prefers-reduced-motion: reduce)').matches ? { shake: false, bgAnim: false, crt: false } : {};
+  } catch {
+    return {};
+  }
+}
+
 /** Devuelve siempre el MISMO objeto: quien lo modifique y llame a saveSettings() lo propaga a todos. */
 export function loadSettings(): Settings {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(KEY);
-    cache = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    cache = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults, ...reducedMotionDefaults() };
   } catch {
-    cache = { ...defaults };
+    cache = { ...defaults, ...reducedMotionDefaults() };
   }
   return cache!;
 }

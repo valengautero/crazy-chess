@@ -84,6 +84,7 @@ function runLesson(root: HTMLElement, lesson: Lesson, startAt = 0): void {
   stage.append(canvas, promo);
   const quiz = el('div', 'quiz hidden');
   const feedback = el('div', 'feedback');
+  feedback.setAttribute('role', 'status');
   const controls = el('div', 'controls');
   const hintBtn = cardButton(t('learn.hint'), () => hint());
   const retryBtn = cardButton(t('learn.retry'), () => load(idx));
@@ -95,7 +96,7 @@ function runLesson(root: HTMLElement, lesson: Lesson, startAt = 0): void {
 
   const view = new BoardView(canvas, game, {
     showLegal: loadSettings().showLegal,
-    reserve: 330,
+    reserve: 370,
     flipped: false,
     canInteract: () => !solved && !busy && promo.classList.contains('hidden'),
     onMoveAttempt: (from, to) => {

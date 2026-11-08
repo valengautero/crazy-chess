@@ -1,6 +1,6 @@
 // Textos estructurados por idioma. Para agregar otro idioma: crear en.ts con las mismas claves.
 const es = {
-  'app.title': 'AJEDREZ PIXEL',
+  'app.title': 'CRAZY CHESS!',
   'menu.learn': 'Aprender',
   'menu.ai': 'Practicar vs IA',
   'menu.online': 'Multijugador',
@@ -126,6 +126,8 @@ const es = {
   'online.rivalturn': 'Turno del rival',
   'online.rivaloff': 'Tu rival se desconectó. Si no vuelve pierde la partida…',
   'online.reconnecting': 'Reconectando…',
+  'online.noserver': 'No se pudo conectar con el servidor. Reintentando…',
+  'ai.engine.error': 'No se pudo cargar el motor de la IA. Recargá la página e intentá de nuevo.',
   'online.offer': 'Ofrecer tablas',
   'online.offered': 'Oferta de tablas enviada…',
   'online.rivaloffers': 'Tu rival ofrece tablas',
