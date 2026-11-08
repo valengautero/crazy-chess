@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estilos de piezas</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+  <style>
+    body { padding: 16px; }
+    h1 { text-align: center; margin: 8px 0 4px; color: var(--gold); text-shadow: 3px 3px 0 var(--shadow); }
+    .lead { text-align: center; opacity: 0.85; margin: 0 auto 16px; max-width: 760px; }
+    .wrap { overflow-x: auto; max-width: 1280px; margin: 0 auto; }
+    table.styles { border-collapse: separate; border-spacing: 0; width: 100%; background: rgba(18, 10, 31, 0.88); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--shadow); }
+    .styles th, .styles td { padding: 10px; border-bottom: 3px solid rgba(255, 244, 214, 0.18); vertical-align: middle; }
+    .styles th { text-align: center; color: var(--gold); font-size: 15px; background: rgba(0, 0, 0, 0.35); }
+    .styles td.name { min-width: 190px; font-size: 17px; }
+    .styles td.name small { display: block; font-size: 13px; opacity: 0.75; margin-top: 4px; line-height: 1.3; }
+    .styles td.native { font-size: 13px; opacity: 0.8; white-space: nowrap; }
+    .strip { display: flex; }
+    .sq { width: 76px; height: 76px; display: flex; align-items: center; justify-content: center; }
+    .sq.l { background: #8f6bc2; } .sq.d { background: #43306e; }
+    .sq canvas { width: 66px; height: auto; max-height: 66px; image-rendering: pixelated; }
+    .sq canvas.glyph { image-rendering: auto; }
+    .more { max-width: 760px; margin: 18px auto 0; font-size: 15px; line-height: 1.4; opacity: 0.9; }
+    .more li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Estilos de piezas</h1>
+  <p class="lead">Mismas siluetas 16×16, distintos acabados. Cada pieza se muestra sobre casilla clara y oscura para ver el contraste. Orden: rey, dama, torre, alfil, caballo, peón.</p>
+  <div class="wrap"><table class="styles" id="t"></table></div>
+  <ul class="more">
+    <li><b>Dibujo propio en 32×32</b>: más detalle (cara del caballo, joyas en la corona). Es lo más trabajoso porque hay que dibujar las 6 piezas de nuevo.</li>
+    <li><b>Pack externo con licencia libre</b> (por ejemplo, sets CC0 de Kenney.nl): cambia la identidad, pero habría que revisar la licencia y la coherencia con el resto del arte.</li>
+  </ul>
+  <script type="module" src="/src/piecesTable.ts"></script>
+</body>
+</html>

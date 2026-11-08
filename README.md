@@ -102,3 +102,6 @@ Todo el audio se sintetiza con WebAudio y los sprites 16x16 están definidos en 
 
 ## Licencias
 Stockfish (WASM lite, `client/public/stockfish/`) es GPL-3.0; ver `LICENSE-GPL3.txt` en esa carpeta. Fuente: Pixelify Sans (OFL).
+
+## Estilos de piezas
+`/pieces.html` (con `npm run dev`, http://localhost:5173/pieces.html) muestra una tabla comparando variantes visuales de las piezas.

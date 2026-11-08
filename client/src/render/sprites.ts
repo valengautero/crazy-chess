@@ -50,13 +50,13 @@ const KNIGHT = [
 
 const SWAP: Record<string, string> = { h: 's', s: 'h' };
 
-function expand(type: PieceSymbol): string[] {
+export function expand(type: PieceSymbol): string[] {
   if (type === 'n') return KNIGHT;
   const half = HALF[type]!;
   return half.map((r) => r + [...r].reverse().map((c) => SWAP[c] ?? c).join(''));
 }
 
-interface Style {
+export interface Style {
   ink: Record<string, string>;
   face: string;
   ring: string;
