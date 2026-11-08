@@ -8,7 +8,7 @@ import { RoomManager } from './RoomManager';
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.wasm': 'application/wasm', '.woff': 'font/woff', '.woff2': 'font/woff2', '.png': 'image/png',
-  '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json',
 };
 
 export interface ServerOptions {
