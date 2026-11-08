@@ -23,5 +23,6 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Crazy Chess! - ajedrez pixel art para aprender y jugar online"
+  "description": "Crazy Chess! - ajedrez pixel art para aprender y jugar online",
+  "license": "GPL-3.0-or-later"
 }

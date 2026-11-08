@@ -116,6 +116,7 @@ tablero en perspectiva 3D. El botón ♪ silencia todo. Los ajustes se guardan e
 Todo el audio se sintetiza con WebAudio y las piezas 32×32 se generan en código (`client/src/render/sprites32.ts`). En Opciones se puede alternar entre piezas con carta o piezas solas.
 
 ## Licencias
+Este proyecto se distribuye bajo **GPL-3.0-or-later** (ver `LICENSE`), porque incluye Stockfish, que es GPL-3.0.
 Stockfish (WASM lite, `client/public/stockfish/`) es GPL-3.0; ver `LICENSE-GPL3.txt` en esa carpeta. Fuente: Pixelify Sans (OFL).
 
 ## Estilos de piezas
