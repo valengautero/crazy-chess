@@ -1,8 +1,12 @@
-import type { Move, PieceSymbol, Square } from 'chess.js';
+import type { Color, Move, PieceSymbol, Square } from 'chess.js';
+import { playSfx } from '../audio/audio';
 import type { Game } from '../core/game';
+import { loadSettings } from '../core/settings';
+import { Effects } from './effects';
+import { CARD_H, CARD_W, getCard } from './sprites';
 
 const FILES = 'abcdefgh';
-const GLYPH: Record<PieceSymbol, string> = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
+const VALUE: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 export const PALETTE = {
   light: '#8f6bc2',
@@ -11,9 +15,6 @@ export const PALETTE = {
   selected: 'rgba(255, 210, 74, 0.7)',
   legal: 'rgba(255, 210, 74, 0.85)',
   check: 'rgba(230, 57, 70, 0.75)',
-  white: '#fff4d6',
-  black: '#1a1028',
-  outline: '#0d0817',
   coordLight: '#43306e',
   coordDark: '#8f6bc2',
 };
@@ -27,14 +28,33 @@ export interface BoardOptions {
   canInteract: () => boolean;
 }
 
+interface Anim {
+  from: Square;
+  to: Square;
+  start: number;
+  dur: number;
+  kind: 'hop' | 'land';
+  ghost?: { type: PieceSymbol; color: Color; sq: Square };
+  impact?: () => void;
+  impacted: boolean;
+}
+
+const FLIGHT = 0.72; // fracción de la animación que dura el vuelo; el resto es el "aplastón"
+
 export class BoardView {
   private ctx: CanvasRenderingContext2D;
   private size = 0;
   private selected: Square | null = null;
   private legalTargets: Move[] = [];
   private drag: { from: Square; x: number; y: number; moved: boolean } | null = null;
+  private hover: Square | null = null;
   private dirty = true;
   private arrow: { from: Square; to: Square } | null = null;
+  private anims: Anim[] = [];
+  private fx = new Effects();
+  private seenPlies = 0;
+  private lastWasDrag = false;
+  private shaking = false;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -42,20 +62,18 @@ export class BoardView {
     public opts: BoardOptions,
   ) {
     this.ctx = canvas.getContext('2d')!;
+    this.seenPlies = game.chess.history().length;
     canvas.addEventListener('pointerdown', this.onDown);
     canvas.addEventListener('pointermove', this.onMove);
     canvas.addEventListener('pointerup', this.onUp);
     canvas.addEventListener('pointercancel', () => this.cancelDrag());
+    canvas.addEventListener('pointerleave', () => {
+      this.hover = null;
+      this.invalidate();
+    });
     new ResizeObserver(() => this.resize()).observe(canvas.parentElement!);
     this.resize();
-    const loop = () => {
-      if (this.dirty) {
-        this.draw();
-        this.dirty = false;
-      }
-      requestAnimationFrame(loop);
-    };
-    loop();
+    requestAnimationFrame(this.frame);
   }
 
   invalidate(): void {
@@ -74,6 +92,23 @@ export class BoardView {
     this.invalidate();
   }
 
+  /**
+   * Llamar después de cualquier cambio en la partida. Detecta si se agregó UNA jugada
+   * (y la anima con sonido/efectos) o si hubo deshacer / reinicio (sin animación).
+   */
+  sync(): void {
+    const hist = this.game.chess.history({ verbose: true });
+    if (hist.length === this.seenPlies + 1) {
+      this.onNewMove(hist[hist.length - 1]!, this.lastWasDrag);
+    } else if (hist.length !== this.seenPlies) {
+      this.anims = [];
+    }
+    this.seenPlies = hist.length;
+    this.lastWasDrag = false;
+    this.invalidate();
+  }
+
+  // ---------- tamaño y coordenadas ----------
   private resize(): void {
     const parent = this.canvas.parentElement!;
     const avail = Math.min(parent.clientWidth, window.innerHeight - 200);
@@ -88,7 +123,6 @@ export class BoardView {
     this.invalidate();
   }
 
-  // --- coordenadas ---
   private squareAt(px: number, py: number): Square | null {
     const s = this.size / 8;
     let col = Math.floor(px / s);
@@ -112,12 +146,19 @@ export class BoardView {
     return { x: col * s, y: row * s };
   }
 
+  private centerOf(sq: Square): { x: number; y: number } {
+    const o = this.originOf(sq);
+    const s = this.size / 8;
+    return { x: o.x + s / 2, y: o.y + s / 2 };
+  }
+
   private pointer(e: PointerEvent) {
     const r = this.canvas.getBoundingClientRect();
+    // el canvas puede estar desplazado por el shake; el rect ya lo incluye, así que se compensa
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
-  // --- input ---
+  // ---------- input ----------
   private onDown = (e: PointerEvent): void => {
     if (!this.opts.canInteract()) return;
     const { x, y } = this.pointer(e);
@@ -125,9 +166,8 @@ export class BoardView {
     if (!sq) return;
     this.canvas.setPointerCapture(e.pointerId);
 
-    // Click sobre un destino legal de la pieza ya seleccionada.
     if (this.selected && this.legalTargets.some((m) => m.to === sq)) {
-      this.finishMove(this.selected, sq);
+      this.finishMove(this.selected, sq, false);
       return;
     }
     const piece = this.game.chess.get(sq);
@@ -135,6 +175,7 @@ export class BoardView {
       this.selected = sq;
       this.legalTargets = this.game.legalMovesFrom(sq);
       this.drag = { from: sq, x, y, moved: false };
+      playSfx('hover');
     } else {
       this.clearSelection();
     }
@@ -142,11 +183,20 @@ export class BoardView {
   };
 
   private onMove = (e: PointerEvent): void => {
-    if (!this.drag) return;
     const { x, y } = this.pointer(e);
-    this.drag.x = x;
-    this.drag.y = y;
-    this.drag.moved = true;
+    if (this.drag) {
+      this.drag.x = x;
+      this.drag.y = y;
+      this.drag.moved = true;
+    } else if (e.pointerType === 'mouse') {
+      const sq = this.squareAt(x, y);
+      const has = sq && this.game.chess.get(sq);
+      const next = has ? sq : null;
+      if (next !== this.hover) {
+        this.hover = next;
+        if (next) playSfx('hover');
+      }
+    }
     this.invalidate();
   };
 
@@ -157,9 +207,9 @@ export class BoardView {
     const { x, y } = this.pointer(e);
     const sq = this.squareAt(x, y);
     if (d.moved && sq && sq !== d.from && this.legalTargets.some((m) => m.to === sq)) {
-      this.finishMove(d.from, sq);
+      this.finishMove(d.from, sq, true);
     } else {
-      this.invalidate(); // la pieza vuelve a su casilla; sigue seleccionada
+      this.invalidate();
     }
   };
 
@@ -168,14 +218,124 @@ export class BoardView {
     this.invalidate();
   }
 
-  private finishMove(from: Square, to: Square): void {
+  private finishMove(from: Square, to: Square, viaDrag: boolean): void {
+    this.lastWasDrag = viaDrag;
     const done = this.opts.onMoveAttempt(from, to);
     if (done) this.clearSelection();
     else this.invalidate();
   }
 
-  // --- dibujo ---
-  private draw(): void {
+  // ---------- animación de jugadas ----------
+  private onNewMove(m: Move, viaDrag: boolean): void {
+    const now = performance.now();
+    // si llega otra jugada antes de terminar la animación anterior, se cierra la anterior (con sus efectos)
+    for (const a of this.anims) if (!a.impacted) a.impact?.();
+    this.anims = [];
+    const opponent: Color = m.color === 'w' ? 'b' : 'w';
+    let ghost: Anim['ghost'];
+    if (m.captured) {
+      const capSq = m.flags.includes('e') ? (`${m.to[0]}${m.from[1]}` as Square) : m.to;
+      ghost = { type: m.captured, color: opponent, sq: capSq };
+    }
+    const impact = () => this.impactEffects(m, ghost);
+    this.anims.push({
+      from: m.from,
+      to: m.to,
+      start: now,
+      dur: viaDrag ? 200 : 300,
+      kind: viaDrag ? 'land' : 'hop',
+      ghost,
+      impact,
+      impacted: false,
+    });
+    // el enroque también mueve la torre
+    if (m.flags.includes('k') || m.flags.includes('q')) {
+      const rank = m.color === 'w' ? '1' : '8';
+      const king = m.flags.includes('k');
+      this.anims.push({
+        from: `${king ? 'h' : 'a'}${rank}` as Square,
+        to: `${king ? 'f' : 'd'}${rank}` as Square,
+        start: now,
+        dur: 300,
+        kind: 'hop',
+        impacted: true,
+      });
+    }
+  }
+
+  private impactEffects(m: Move, ghost: Anim['ghost']): void {
+    const now = performance.now();
+    const s = this.size / 8;
+    const ps = Math.max(2, Math.round(s * 0.07));
+    const c = this.centerOf(m.to);
+    const mate = m.san.endsWith('#');
+    const check = m.san.endsWith('+') || mate;
+    const settings = loadSettings();
+
+    if (ghost) {
+      this.fx.burst(c.x, c.y, 22, ['#fff4d6', '#ffd24a', '#e63946'], s * 5, ps, now);
+      const v = VALUE[ghost.type];
+      if (v) this.fx.floatText(c.x, c.y - s * 0.4, `+${v}`, '#ffd24a', Math.round(s * 0.45), now);
+      if (settings.shake) this.fx.shake(s * 0.12, now);
+    } else {
+      this.fx.burst(c.x, c.y + s * 0.3, 6, ['#d8c8ff', '#8f6bc2'], s * 1.5, ps, now);
+    }
+    if (m.promotion) {
+      this.fx.burst(c.x, c.y, 28, ['#ffd24a', '#fff4d6', '#3a86ff'], s * 4, ps, now);
+      this.fx.floatText(c.x, c.y - s * 0.5, '¡CORONA!', '#ffd24a', Math.round(s * 0.34), now);
+    }
+    if (check) {
+      const k = this.findKing(m.color === 'w' ? 'b' : 'w');
+      if (k) {
+        const kc = this.centerOf(k);
+        this.fx.burst(kc.x, kc.y, mate ? 70 : 30, ['#e63946', '#ffd24a', '#fff4d6'], s * (mate ? 7 : 5), ps, now);
+        this.fx.floatText(kc.x, kc.y - s * 0.6, mate ? '¡MATE!' : '¡JAQUE!', mate ? '#ffd24a' : '#e63946', Math.round(s * (mate ? 0.6 : 0.42)), now, mate ? 1800 : 1100);
+        if (settings.shake) this.fx.shake(s * (mate ? 0.2 : 0.1), now);
+      }
+    }
+    playSfx(mate ? 'mate' : check ? 'check' : m.promotion ? 'promote' : m.flags.includes('k') || m.flags.includes('q') ? 'castle' : ghost ? 'capture' : 'move');
+  }
+
+  private findKing(color: Color): Square | null {
+    for (const row of this.game.chess.board())
+      for (const p of row) if (p && p.type === 'k' && p.color === color) return p.square;
+    return null;
+  }
+
+  /** Avanza animaciones; devuelve true si hace falta seguir dibujando cuadros. */
+  private updateFx(now: number): boolean {
+    for (const a of this.anims) {
+      const p = (now - a.start) / a.dur;
+      const impactAt = a.kind === 'land' ? 0 : FLIGHT;
+      if (!a.impacted && p >= impactAt) {
+        a.impacted = true;
+        a.impact?.();
+      }
+    }
+    this.anims = this.anims.filter((a) => now - a.start < a.dur);
+
+    const off = this.fx.shakeOffset(now);
+    if (off.x !== 0 || off.y !== 0) {
+      this.canvas.style.transform = `translate(${off.x}px, ${off.y}px)`;
+      this.shaking = true;
+    } else if (this.shaking) {
+      this.canvas.style.transform = '';
+      this.shaking = false;
+    }
+    return this.anims.length > 0 || this.fx.active;
+  }
+
+  private frame = (now: number): void => {
+    const animating = this.updateFx(now);
+    if (this.dirty || animating || this.hover || this.selected || this.drag) {
+      this.draw(now);
+      this.dirty = false;
+    }
+    requestAnimationFrame(this.frame);
+  };
+
+  // ---------- dibujo ----------
+  private draw(now: number): void {
     const { ctx } = this;
     const s = this.size / 8;
     const last = this.game.lastMove;
@@ -183,12 +343,10 @@ export class BoardView {
 
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
-        const light = (r + c) % 2 === 0;
-        ctx.fillStyle = light ? PALETTE.light : PALETTE.dark;
+        ctx.fillStyle = (r + c) % 2 === 0 ? PALETTE.light : PALETTE.dark;
         ctx.fillRect(c * s, r * s, s, s);
       }
     }
-
     const fill = (sq: Square, color: string) => {
       const o = this.originOf(sq);
       ctx.fillStyle = color;
@@ -200,18 +358,42 @@ export class BoardView {
     }
     if (kingSq) fill(kingSq, PALETTE.check);
     if (this.selected) fill(this.selected, PALETTE.selected);
+    const animatedTo = new Set(this.anims.map((a) => a.to));
+    const draggedFrom = this.drag?.moved ? this.drag.from : null;
+
+    // piezas quietas
+    for (const row of this.game.chess.board()) {
+      for (const p of row) {
+        if (!p || animatedTo.has(p.square) || p.square === draggedFrom) continue;
+        const c = this.centerOf(p.square);
+        let rot = 0;
+        let lift = 0;
+        if (p.square === this.hover && !this.drag) {
+          rot = Math.sin(now / 170) * 0.08;
+          lift = s * 0.08;
+        }
+        if (p.square === this.selected) {
+          rot = Math.sin(now / 210) * 0.05;
+          lift = s * 0.06;
+        }
+        this.drawCard(p.type, p.color, c.x, c.y, s, { rot, lift });
+      }
+    }
 
     this.drawCoordinates(s);
 
-    // piezas
-    for (const row of this.game.chess.board()) {
-      for (const p of row) {
-        if (!p) continue;
-        if (this.drag?.moved && this.drag.from === p.square) continue;
-        const o = this.originOf(p.square);
-        this.drawPiece(p.type, p.color, o.x + s / 2, o.y + s / 2, s);
+    // piezas capturadas desvaneciéndose y piezas en vuelo
+    for (const a of this.anims) {
+      const p = (now - a.start) / a.dur;
+      if (a.ghost && p < FLIGHT) {
+        const f = p / FLIGHT;
+        const c = this.centerOf(a.ghost.sq);
+        ctx.globalAlpha = 1 - f;
+        this.drawCard(a.ghost.type, a.ghost.color, c.x, c.y, s, { rot: f * 1.4, scale: 1 + f * 0.3 });
+        ctx.globalAlpha = 1;
       }
     }
+    for (const a of this.anims) this.drawAnimated(a, now, s);
 
     // marcas de movimientos legales
     if (this.opts.showLegal && this.selected) {
@@ -231,37 +413,96 @@ export class BoardView {
 
     if (this.arrow) this.drawArrow(this.arrow.from, this.arrow.to, s);
 
-    // pieza arrastrada, encima de todo
     if (this.drag?.moved) {
       const p = this.game.chess.get(this.drag.from);
-      if (p) this.drawPiece(p.type, p.color, this.drag.x, this.drag.y - s * 0.15, s * 1.1);
+      if (p) this.drawCard(p.type, p.color, this.drag.x, this.drag.y - s * 0.15, s, { scale: 1.12, rot: 0.05, lift: s * 0.1 });
     }
+
+    this.fx.draw(ctx, now);
+  }
+
+  private drawAnimated(a: Anim, now: number, s: number): void {
+    const piece = this.game.chess.get(a.to);
+    if (!piece) return;
+    const p = Math.min(1, (now - a.start) / a.dur);
+    const from = this.centerOf(a.from);
+    const to = this.centerOf(a.to);
+    let x = to.x, y = to.y, lift = 0, sx = 1, sy = 1, rot = 0;
+    let q: number; // progreso del aplastón al aterrizar
+    if (a.kind === 'hop' && p < FLIGHT) {
+      const f = p / FLIGHT;
+      const e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+      x = from.x + (to.x - from.x) * e;
+      y = from.y + (to.y - from.y) * e;
+      const arc = Math.sin(Math.PI * f);
+      lift = arc * s * 0.32;
+      sx = 1 - 0.12 * arc;
+      sy = 1 + 0.2 * arc;
+      rot = (to.x - from.x >= 0 ? 1 : -1) * arc * 0.12;
+    } else {
+      q = a.kind === 'hop' ? (p - FLIGHT) / (1 - FLIGHT) : p;
+      const k = Math.exp(-4 * q) * Math.cos(q * Math.PI * 2.5);
+      const amp = a.kind === 'hop' ? 1 : 0.7;
+      sy = 1 - 0.28 * k * amp;
+      sx = 1 + 0.22 * k * amp;
+    }
+    this.drawCard(piece.type, piece.color, x, y, s, { lift, sx, sy, rot });
+  }
+
+  private drawCard(
+    type: PieceSymbol,
+    color: Color,
+    cx: number,
+    cy: number,
+    s: number,
+    o: { rot?: number; lift?: number; scale?: number; sx?: number; sy?: number } = {},
+  ): void {
+    const { ctx } = this;
+    const h = s * 0.84;
+    const w = (h * CARD_W) / CARD_H;
+    const lift = o.lift ?? 0;
+    const k = o.scale ?? 1;
+    const sx = (o.sx ?? 1) * k;
+    const sy = (o.sy ?? 1) * k;
+    const card = getCard(type, color);
+    ctx.imageSmoothingEnabled = false;
+    // sombra (queda en el suelo; se separa a medida que la carta se levanta)
+    ctx.save();
+    ctx.translate(cx + s * 0.03 + lift * 0.4, cy + s * 0.05 + lift * 0.4);
+    ctx.scale(sx, sy);
+    ctx.fillStyle = 'rgba(7, 3, 13, 0.38)';
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.restore();
+    // carta
+    ctx.save();
+    ctx.translate(cx, cy - lift);
+    ctx.rotate(o.rot ?? 0);
+    ctx.scale(sx, sy);
+    ctx.drawImage(card, -w / 2, -h / 2, w, h);
+    ctx.restore();
   }
 
   private drawArrow(from: Square, to: Square, s: number): void {
     const { ctx } = this;
-    const a = this.originOf(from);
-    const b = this.originOf(to);
-    const x1 = a.x + s / 2, y1 = a.y + s / 2, x2 = b.x + s / 2, y2 = b.y + s / 2;
-    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const a = this.centerOf(from);
+    const b = this.centerOf(to);
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
     const head = s * 0.34;
-    const w = s * 0.14;
-    const ex = x2 - Math.cos(ang) * head * 0.6;
-    const ey = y2 - Math.sin(ang) * head * 0.6;
+    const ex = b.x - Math.cos(ang) * head * 0.6;
+    const ey = b.y - Math.sin(ang) * head * 0.6;
     ctx.save();
     ctx.globalAlpha = 0.85;
     ctx.strokeStyle = '#3a86ff';
     ctx.fillStyle = '#3a86ff';
-    ctx.lineCap = 'butt';
-    ctx.lineWidth = w;
+    ctx.lineWidth = s * 0.14;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
+    ctx.moveTo(a.x, a.y);
     ctx.lineTo(ex, ey);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - Math.cos(ang - 0.5) * head, y2 - Math.sin(ang - 0.5) * head);
-    ctx.lineTo(x2 - Math.cos(ang + 0.5) * head, y2 - Math.sin(ang + 0.5) * head);
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - Math.cos(ang - 0.5) * head, b.y - Math.sin(ang - 0.5) * head);
+    ctx.lineTo(b.x - Math.cos(ang + 0.5) * head, b.y - Math.sin(ang + 0.5) * head);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -274,31 +515,12 @@ export class BoardView {
     for (let i = 0; i < 8; i++) {
       const fileIdx = this.opts.flipped ? 7 - i : i;
       const rank = this.opts.flipped ? i + 1 : 8 - i;
-      // letras en la fila inferior
-      const lightBottom = (7 + i) % 2 === 0;
-      ctx.fillStyle = lightBottom ? PALETTE.coordLight : PALETTE.coordDark;
+      ctx.fillStyle = (7 + i) % 2 === 0 ? PALETTE.coordLight : PALETTE.coordDark;
       ctx.textAlign = 'right';
       ctx.fillText(FILES[fileIdx]!, (i + 1) * s - 3, 7 * s + s - s * 0.24);
-      // números en la columna izquierda
-      const lightLeft = i % 2 === 0;
-      ctx.fillStyle = lightLeft ? PALETTE.coordLight : PALETTE.coordDark;
+      ctx.fillStyle = i % 2 === 0 ? PALETTE.coordLight : PALETTE.coordDark;
       ctx.textAlign = 'left';
       ctx.fillText(String(rank), 3, i * s + 2);
     }
-  }
-
-  /** Piezas provisorias (glifos). En la etapa (c) se reemplazan por sprites pixel art. */
-  private drawPiece(type: PieceSymbol, color: 'w' | 'b', cx: number, cy: number, s: number): void {
-    const { ctx } = this;
-    ctx.font = `${Math.floor(s * 0.78)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = Math.max(2, s * 0.05);
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = PALETTE.outline;
-    ctx.fillStyle = color === 'w' ? PALETTE.white : PALETTE.black;
-    const g = GLYPH[type];
-    ctx.strokeText(g, cx, cy + s * 0.04);
-    ctx.fillText(g, cx, cy + s * 0.04);
   }
 }

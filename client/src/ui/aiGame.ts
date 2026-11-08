@@ -7,6 +7,7 @@ import { loadSettings, saveSettings } from '../core/settings';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
 import { showMenu } from './menu';
+import { navigate } from './transition';
 import { showPromotion } from './promotion';
 
 export function showAiSetup(root: HTMLElement): void {
@@ -48,8 +49,8 @@ export function showAiSetup(root: HTMLElement): void {
     levelBox,
     el('h2', 'section', t('ai.setup.color')),
     colorBox,
-    cardButton(t('ai.setup.start'), () => showAiGame(root)),
-    cardButton(t('btn.menu'), () => showMenu(root)),
+    cardButton(t('ai.setup.start'), () => navigate(root, () => showAiGame(root))),
+    cardButton(t('btn.menu'), () => navigate(root, () => showMenu(root))),
   );
   root.append(wrap);
 }
@@ -96,8 +97,8 @@ export function showAiGame(root: HTMLElement): void {
     arrowBtn,
     cardButton(t('btn.undo'), undo),
     legalBtn,
-    cardButton(t('btn.new'), () => { gen++; engine.cancel(); showAiSetup(root); }),
-    cardButton(t('btn.menu'), () => { gen++; engine.cancel(); showMenu(root); }),
+    cardButton(t('btn.new'), () => { gen++; engine.cancel(); navigate(root, () => showAiSetup(root)); }),
+    cardButton(t('btn.menu'), () => { gen++; engine.cancel(); navigate(root, () => showMenu(root)); }),
   );
   screen.append(
     el('div', 'subtitle', `${level.name} ${level.approxElo}`),
@@ -133,7 +134,7 @@ export function showAiGame(root: HTMLElement): void {
     if (!s.over) text = thinking ? t('ai.thinking') : `${t('ai.you')}. ${s.check ? t('game.check') : ''}`;
     status.textContent = text;
     status.classList.toggle('alert', s.check);
-    view.invalidate();
+    view.sync();
   }
 
   function afterMove(): void {

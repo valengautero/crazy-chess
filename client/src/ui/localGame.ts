@@ -5,6 +5,7 @@ import { loadSettings, saveSettings } from '../core/settings';
 import { BoardView } from '../render/boardView';
 import { cardButton, el } from './dom';
 import { showMenu } from './menu';
+import { navigate } from './transition';
 import { showPromotion } from './promotion';
 
 export function showLocalGame(root: HTMLElement): void {
@@ -47,7 +48,7 @@ export function showLocalGame(root: HTMLElement): void {
       view.clearSelection();
       refresh();
     }),
-    cardButton(t('btn.menu'), () => showMenu(root)),
+    cardButton(t('btn.menu'), () => navigate(root, () => showMenu(root))),
   );
   screen.append(status, stage, controls);
   root.append(screen);
@@ -79,7 +80,7 @@ export function showLocalGame(root: HTMLElement): void {
     const s = game.status();
     status.textContent = t(s.messageKey) + (s.check && !s.over ? ' ' + t('game.check') : '');
     status.classList.toggle('alert', s.check);
-    view.invalidate();
+    view.sync();
   }
 
   refreshLegalLabel();
