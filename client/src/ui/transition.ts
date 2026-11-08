@@ -7,16 +7,16 @@ export function navigate(root: HTMLElement, build: () => void): void {
   const wipe = document.createElement('div');
   wipe.className = 'wipe';
   document.body.append(wipe);
-  wipe.style.animation = 'wipe-in 260ms steps(8) forwards';
+  wipe.style.animation = 'wipe-in 320ms cubic-bezier(.65, 0, .35, 1) forwards';
   window.setTimeout(() => {
     build();
     root.classList.remove('dissolve');
     void root.offsetWidth; // reinicia la animación
     root.classList.add('dissolve');
-    wipe.style.animation = 'wipe-out 260ms steps(8) forwards';
+    wipe.style.animation = 'wipe-out 320ms cubic-bezier(.65, 0, .35, 1) forwards';
     window.setTimeout(() => {
       wipe.remove();
       busy = false;
-    }, 270);
-  }, 270);
+    }, 330);
+  }, 330);
 }
